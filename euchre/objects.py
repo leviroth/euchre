@@ -2,7 +2,8 @@ from random import shuffle
 
 class Deck():
     suits = {"C", "D", "H", "S"}
-    ranks = {"9", "10", "J", "Q", "K", "A"}
+    colors = {"C": "black", "S": "black", "D": "red", "H": "red"}
+    ranks = ["9", "10", "J", "Q", "K", "A"]
 
     def __init__(self):
         self.cards = {Card(rank, suit) for suit in self.suits for rank in self.ranks}
@@ -23,6 +24,9 @@ class Card():
     rankNames = {"9": "9", "10": "10", "J": "Jack", "Q": "Queen", "K": "King", "A": "Ace"}
 
     def __init__(self, rank, suit):
+        suit = suit.upper()
+        rank = rank.upper()
+
         if suit not in Deck.suits:
             raise ValueError('That is not a suit')
         if rank not in Deck.ranks:
@@ -41,27 +45,92 @@ class Card():
 
 class Table():
     def __init__(self):
-        self.players = [Player() for x in xrange(4)]
+        self.players = [Player() for x in range(4)]
         self.dealer = players[0]
         self.deck = Deck()
         self.deal()
 
     def deal(self):
         for player in self.players:
-            player.hand = {self.deck.draw() for _ in xrange(5)}
+            player.hand = {self.deck.draw() for _ in range(5)}
 
         self.upCard = self.deck.draw()
         self.phase = "bid1"
 
+    def suit(card):
+        if card.rank == "J" and Deck.colors[card.suit] == Deck.colors[self.trump]:
+            return self.trump
+        else:
+            return card.suit
+
+    def matchSuit(a, b):
+        return suit(a) == suit(b)
+
+    def trickCompare(a, b):
+        if suit(a) == self.trump and suit(b) != self.trump:
+            return False
+
+class Hand():
+    pass
+
+
+class Trick():
+    def __init__(self, hand):
+        self.hand = hand
+        self.trump = self.hand.trump
+        self.cards = []
+
+    def relativeSuit(self, card):
+        if card.rank == "J" and Deck.colors[card.suit] == \
+                Deck.colors[self.trump]:
+            return self.trump
+        else:
+            return card.suit
+
+    def following(self, card):
+        if self.cards == []:
+            return True
+        else:
+            return self.relativeSuit(card) == \
+                    self.relativeSuit(self.cards[0][0])
+
+    def relativeRank(self, card):
+        if self.relativeSuit(card) == self.trump:
+            fst = 2
+        elif self.relativeSuit(card) == \
+                self.relativeSuit(self.cards[0][0]):
+            fst = 1
+        else:
+            fst = 0
+
+        if fst == 2 and card.rank == "J":
+            if card.suit == self.trump:
+                snd = 11
+            else:
+                snd = 10
+        else:
+            snd = Deck.ranks.index(card.rank)
+
+        return (fst, snd)
+
+    def winner(self):
+        return max(self.cards, key=lambda x: self.relativeRank(x[0]))
+
+    def play(self, card, player):
+        self.cards.append((card, player))
+        if len(self.cards) == 4:
+            self.hand.tally(self.winner()[1])
+
+
 class Player():
-    def requireTurn(self, move):
+    def requireTurn(move):
         def _move(self, *args, **kwargs):
             if self is not t.turn:
                 raise TurnError("Not your turn", t.turn)
             # if self.phase != t.phase:
             #     raise TurnError("Wrong phase")
 
-        return move
+        return _move
 
     def __init__(self, t):
         self.t = t
@@ -94,11 +163,12 @@ class Player():
 
     @requireTurn
     def playCard(self, card):
-        if not t.matchSuit(card, led):
+        if not t.matchSuit(card, table.led) \
+                and t.suit(table.led) in [t.suit(c) for c in self.hand]:
             raise ValueError("Must follow suit")
         else:
             self.hand.remove(card)
-            table.play(card)
+            table.play(card, self)
 
     def chooseCard(self):
         while True:
