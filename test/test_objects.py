@@ -2,6 +2,7 @@ import unittest
 from unittest.mock import *
 from euchre.objects import *
 
+
 class CardTest(unittest.TestCase):
     def test_valid_cards(self):
         self.assertRaises(ValueError, Card, "10", "F")
@@ -14,6 +15,7 @@ class CardTest(unittest.TestCase):
     def test_eq(self):
         self.assertTrue(Card("J", "H"), Card("j", "h"))
 
+
 class DeckTest(unittest.TestCase):
     def setUp(self):
         self.deck = Deck()
@@ -25,6 +27,7 @@ class DeckTest(unittest.TestCase):
         myCard = self.deck.draw()
         self.assertIn(myCard, self.deck.cards)
         self.assertNotIn(myCard, self.deck.remaining)
+
 
 class TrickTest(unittest.TestCase):
     @patch('euchre.objects.Hand')
@@ -63,4 +66,3 @@ class TrickTest(unittest.TestCase):
         self.t.play(Card("J", "D"), self.p2)
         self.assertEqual(self.t.winner()[1], self.p2)
         self.assertTrue(self.h.tally.called)
-
