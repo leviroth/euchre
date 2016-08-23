@@ -130,14 +130,12 @@ class Trick():
         if self.cards == []:
             return True
         else:
-            return self.relativeSuit(card) == \
-                   self.ledSuit()
+            return self.relativeSuit(card) == self.ledSuit()
 
     def relativeRank(self, card):
         if self.relativeSuit(card) == self.trump:
             fst = 2
-        elif self.relativeSuit(card) == \
-                self.ledSuit():
+        elif self.relativeSuit(card) == self.ledSuit():
             fst = 1
         else:
             fst = 0
@@ -216,8 +214,7 @@ class Player():
     def playCard(self, trick):
         while True:
             card = self.ui.chooseCard()
-            if trick.following(card) \
-                    or trick.ledSuit() not in \
+            if trick.following(card) or trick.ledSuit() not in \
                     [trick.relativeSuit(c) for c in self.hand]:
                 break
             self.ui.complain("Must follow suit")
