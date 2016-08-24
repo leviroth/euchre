@@ -19,7 +19,7 @@ class Deck():
 
     def reset(self):
         self.remaining = list(self.cards)
-        shuffle(self.remaining)
+        self.shuffle()
 
 
 class Card():
@@ -41,6 +41,12 @@ class Card():
     def __eq__(self, other):
         return self.suit == other.suit and self.rank == other.rank
 
+    def __lt__(self, other):
+        # if self.suit == other.suit:
+        #     return self.rank < other.rank
+        # return self.suit < other.suit
+        return (self.suit, self.rank) < (other.suit, other.rank)
+
     def __hash__(self):
         return (self.rank, self.suit).__hash__()
 
@@ -54,54 +60,100 @@ class Table():
         for i in range(4):
             self.players[i].left = self.players[(i + 1) % 4]
             self.players[i].partner = self.players[(i + 2) % 4]
-        self.team = {p: p.n % 2 for p in self.players}
         self.dealer = self.players[0]
         self.deck = Deck()
-        self.deal()
+        self.points = {x: 0 for x in range(2)}
 
-    def itPlayers(self, first):
+    def itPlayers(self, first, excluded={}):
         for i in range(4):
-            yield self.players[(first + i) % 4]
+            p = self.players[(first + i) % 4]
+            if p not in excluded:
+                yield p
 
-    def deal(self):
-        for player in self.players:
-            player.hand = {self.deck.draw() for _ in range(5)}
-
-        self.upCard = self.deck.draw()
-        self.phase = "bid1"
+    def updateScore(self, team, points):
+        self.points[team] += points
+        if self.points[team] >= 10:
+            self.win(team)
 
 
 class Hand():
-    def __init__(self, trump, leader, maker, loner, table):
+    def __init__(self, table, dealer):
         self.table = table
-        self.trump = trump
-        self.leader = leader
-        self.maker = maker
-        self.loner = loner
-        self.points = {p: 0 for p in set(self.table.team.values())}
+        self.dealer = dealer
+        self.table.deck.reset()
+        self.tricksTaken = {x: 0 for x in range(2)}
+        self.deal()
+
+    def run(self):
+        if not self.bid1():
+            if not self.bid2():
+                return
+        self.playRound()
+        self.scoreRound()
+
+    def deal(self):
+        for player in self.table.players:
+            player.hand = {self.table.deck.draw() for _ in range(5)}
+
+        self.upCard = self.table.deck.draw()
+
+    def bid1(self):
+        for player in self.table.itPlayers(self.dealer.left.n):
+            bid = player.bid1()
+            if bid['call']:
+                self.configureRound(player, self.upCard.suit, bid['alone'])
+                if self.dealer is not self.out:
+                    self.dealer.pickUp(self.upCard)
+                return True
+
+        return False
+
+    def bid2(self):
+        for player in self.table.itPlayers(self.dealer.left.n):
+            bid = player.bid2(self.upCard.suit)
+            if bid['call']:
+                self.configureRound(player, bid['suit'], bid['alone'])
+                return True
+
+        return False
+
+    def configureRound(self, player, suit, alone):
+        self.trump = suit
+        self.loner = alone
+        self.maker = player.team
+        if self.loner:
+            self.leader = player.left
+            self.out = player.partner
+        else:
+            self.leader = self.dealer.left
+            self.out = None
 
     def playRound(self):
         leader = self.leader
-        out = leader.left if self.loner else None
         for i in range(5):
-            sequence = filter(lambda x: x != out,
-                              self.table.itPlayers(leader.n))
+            sequence = self.table.itPlayers(leader.n, excluded={self.out})
             trick = Trick(self, leader)
             winner = trick.play(sequence)
-            self.points[self.table.team[winner]] += 1
+            self.tricksTaken[winner.team] += 1
             leader = winner
 
-        winningTeam = max(self.table.teams, key=lambda x: self.points[x])
-        if winningTeam != self.table.team[self.maker]:
-            self.table.points[winningTeam] += 2
+    def scoreRound(self):
+        winningTeam = max(self.tricksTaken,
+                          key=lambda x: self.tricksTaken[x])
+        tricksTaken = self.tricksTaken[winningTeam]
+
+        if winningTeam != self.maker:
+            points = 2
         else:
-            if self.points[winningTeam] == 5:
+            if tricksTaken == 5:
                 if self.loner:
-                    self.table.points[winningTeam] += 4
+                    points = 4
                 else:
-                    self.table.points[winningTeam] += 2
+                    points = 2
             else:
-                self.table.points[winningTeam] += 1
+                points = 1
+
+        self.table.updateScore(winningTeam, points)
 
 
 class Trick():
@@ -160,19 +212,10 @@ class Trick():
 
 
 class Player():
-    def requireTurn(move):
-        def _move(self, *args, **kwargs):
-            pass
-            # if self is not t.turn:
-            #     raise TurnError("Not your turn", t.turn)
-            # if self.phase != t.phase:
-            #     raise TurnError("Wrong phase")
-
-        return _move
-
     def __init__(self, t, n):
         self.table = t
         self.n = n
+        self.team = n % 2
         self.ui = UserInterface(self)
 
     def __str__(self):
@@ -184,36 +227,15 @@ class Player():
     def __hash__(self):
         return self.n.__hash__()
 
-    @requireTurn
-    def bidCall(self, suit=None, alone=False):
-        if suit is None:
-            if self.table.phase != "bid1":
-                raise ValueError("We need a suit for this phase")
-            self.table.dealer.pickUp(self.upCard)
-            self.table.trumpSuit = self.upCard.suit
+    def bid1(self):
+        return self.ui.bid1()
 
-        else:
-            if self.table.phase != "bid2":
-                raise ValueError("You can't choose a suit in this phase")
-            if suit == self.table.upCard.suit:
-                raise ValueError("That suit was turned down")
-            self.table.trumpSuit = suit
+    def bid2(self, excludedSuit):
+        return self.ui.bid2(excludedSuit)
 
-        if alone:
-            self.table.loner(self)
-        self.table.startRound()
-
-    @requireTurn
-    def bidPass(self):
-        if self.table.dealer is self and self.table.phase == "bid2":
-            raise ValueError("Screw the dealer!")
-        else:
-            self.table.passBid()
-
-    # @requireTurn
     def playCard(self, trick):
         while True:
-            card = self.ui.chooseCard()
+            card = self.chooseCard()
             if trick.following(card) or trick.ledSuit() not in \
                     [trick.relativeSuit(c) for c in self.hand]:
                 break
@@ -235,25 +257,58 @@ class Player():
         self.hand.remove(self.chooseCard())
 
 
-class UserInterface():
+class UserInterface():  # pragma: no cover
     def __init__(self, player):
         self.player = player
 
-    def chooseCard(self):
-        while True:
-            for card in self.player.hand:
-                print(card)
-            rank = input("Rank: ")
-            suit = input("Suit: ")
-            if card in self.player.hand:
-                break
-            self.complain("Card not in hand")
+    def prompt(self, s):
+        return input("[{}] {}".format(self.player.n, s))
 
+    def chooseCard(self):
+        for card in self.player.hand:
+            print(card)
+        rank = self.prompt("Rank: ")
+        suit = self.prompt("Suit: ")
         return Card(rank, suit)
+
+    def bid1(self):
+        while True:
+            call = self.prompt("Call? ")
+            if call == "y" or call == "n":
+                break
+
+        result = {'call': True if call == "y" else False}
+        if result['call']:
+            while True:
+                alone = self.prompt("Alone? ")
+                if alone == "y" or alone == "n":
+                    break
+            result.update({'alone': True if alone == "y" else False})
+
+        return result
+
+    def bid2(self, excludedSuit):
+        while True:
+            call = self.prompt("Call? ")
+            if call == "y" or call == "n":
+                break
+
+        result = {'call': True if call == "y" else False}
+        if result['call']:
+            while True:
+                suit = self.prompt("Suit? ")
+                if suit != excludedSuit:
+                    break
+                print("That suit was turned down.")
+            result.update({'suit': suit})
+
+            while True:
+                alone = self.prompt("Alone? ")
+                if alone == "y" or alone == "n":
+                    break
+            result.update({'alone': True if alone == "y" else False})
+
+        return result
 
     def complain(self, msg):
         print(msg)
-
-# t = Table()
-# h = Hand(trump="H", leader=t.players[0],
-#          maker=t.players[0], loner=True, table=t)
