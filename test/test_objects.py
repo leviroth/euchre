@@ -81,6 +81,23 @@ class TableTest(unittest.TestCase):
         for i in cycle:
             self.assertEqual(i, next(it).n)
 
+    @patch('euchre.objects.Table.win')
+    def test_updateScore(self, winMock):
+        self.t = Table()
+        for i in range(10):
+            self.t.updateScore(i % 2, 1)
+        self.assertEqual(5, self.t.points[0])
+        self.assertEqual(5, self.t.points[1])
+        self.assertFalse(self.t.won)
+        self.assertFalse(winMock.called)
+
+        for i in range(9):
+            self.t.updateScore(i % 2, 1)
+        self.assertEqual(10, self.t.points[0])
+        self.assertEqual(9, self.t.points[1])
+        self.assertTrue(self.t.won)
+        self.assertTrue(winMock.called)
+
 
 class HandTest(unittest.TestCase):
     @patch('euchre.objects.Deck.shuffle',
