@@ -1,4 +1,5 @@
 from random import shuffle
+import itertools
 
 
 class Deck():
@@ -63,6 +64,14 @@ class Table():
         self.dealer = self.players[0]
         self.deck = Deck()
         self.points = {x: 0 for x in range(2)}
+        self.ui = GameUI(self)
+        self.won = False
+
+    def run(self):
+        cycle = itertools.cycle(self.players)
+        while not self.won:
+            dealer = next(cycle)
+            Hand(self, dealer).run()
 
     def itPlayers(self, first, excluded={}):
         for i in range(4):
@@ -70,9 +79,13 @@ class Table():
             if p not in excluded:
                 yield p
 
+    def win(self, team):
+        self.ui.win(team)
+
     def updateScore(self, team, points):
         self.points[team] += points
         if self.points[team] >= 10:
+            self.won = True
             self.win(team)
 
 
@@ -99,7 +112,7 @@ class Hand():
 
     def bid1(self):
         for player in self.table.itPlayers(self.dealer.left.n):
-            bid = player.bid1()
+            bid = player.bid1(self.upCard)
             if bid['call']:
                 self.configureRound(player, self.upCard.suit, bid['alone'])
                 if self.dealer is not self.out:
@@ -219,7 +232,7 @@ class Player():
         self.ui = UserInterface(self)
 
     def __str__(self):
-        return str(self.n)
+        return "Player {}".format(self.n)
 
     def __repr__(self):
         return "Player " + str(self.n)
@@ -227,8 +240,8 @@ class Player():
     def __hash__(self):
         return self.n.__hash__()
 
-    def bid1(self):
-        return self.ui.bid1()
+    def bid1(self, upCard):
+        return self.ui.bid1(upCard)
 
     def bid2(self, excludedSuit):
         return self.ui.bid2(excludedSuit)
@@ -262,16 +275,22 @@ class UserInterface():  # pragma: no cover
         self.player = player
 
     def prompt(self, s):
-        return input("[{}] {}".format(self.player.n, s))
+        return input("[{}] {}".format(str(self.player), s))
 
-    def chooseCard(self):
+    def printHand(self):
+        print("\nHand:")
         for card in self.player.hand:
             print(card)
+
+    def chooseCard(self):
+        self.printHand()
         rank = self.prompt("Rank: ")
         suit = self.prompt("Suit: ")
         return Card(rank, suit)
 
-    def bid1(self):
+    def bid1(self, upCard):
+        print("Up Card: " + str(upCard))
+        self.printHand()
         while True:
             call = self.prompt("Call? ")
             if call == "y" or call == "n":
@@ -288,6 +307,7 @@ class UserInterface():  # pragma: no cover
         return result
 
     def bid2(self, excludedSuit):
+        self.printHand()
         while True:
             call = self.prompt("Call? ")
             if call == "y" or call == "n":
@@ -312,3 +332,11 @@ class UserInterface():  # pragma: no cover
 
     def complain(self, msg):
         print(msg)
+
+
+class GameUI():
+    def __init__(self, table):
+        self.table = table
+
+    def win(self, team):
+        print("Team {} wins!".format(team))
