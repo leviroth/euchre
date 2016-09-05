@@ -1,3 +1,9 @@
-from objects import Table
+# For test-driving purposes
 
-Table().run()
+from euchre.objects import *
+
+t = Table()
+ps = [Player() for _ in range(4)]
+for i, p in enumerate(ps):
+    p.joinTable(t, i)
+t.begin()
