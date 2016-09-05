@@ -6,7 +6,6 @@ from functools import wraps
 
 
 Color = Enum('Color', 'red black')
-# Phase = Enum('Phase', 'bid1 bid2 lay pickup')
 
 
 @unique
@@ -225,9 +224,6 @@ class Player():
     def __str__(self):
         return self.name
 
-    # def __repr__(self):
-    #     return "Player: " + str(self)
-
     def __hash__(self):
         return self.n.__hash__()
 
@@ -286,7 +282,6 @@ class Table():
         self.players = {}
         self.deck = Deck()
         self.points = {x: 0 for x in range(2)}
-        # self.ui = GameUI(self)
         self.won = False
 
     def broadcast(self, message):
@@ -317,14 +312,6 @@ class Table():
     def nextHand(self):
         self.hand = Hand(self, next(self.dealCycle))
         self.hand.run()
-
-#     def itPlayers(self, first, excluded={}):
-#         """Not currently in use"""
-#         startIndex = self.players.index(first)
-#         for i in range(4):
-#             p = self.players[(startIndex + i) % 4]
-#             if p not in excluded:
-#                 yield p
 
     def win(self, team):
         self.broadcast("Team {} won".format(team))
@@ -367,58 +354,6 @@ class Hand():
     def run(self):
         self.deal()
         self.phase = Bid1Phase(self, self.dealer)
-
-#     def call1(self, player, alone):
-#         self.configureRound(player, self.upCard.suit, alone)
-#         self.table.server.updateRound()
-#         self.table.server.discardPrompt()
-#         self.turn = self.leader
-
-#     def call2(self, player, suit, alone):
-#         self.configureRound(player, suit, alone)
-#         self.turn = self.leader
-#         self.table.server.updateRound()
-
-    # def bid1(self):
-    #     for player in self.table.itPlayers(self.dealer.left):
-    #         bid = player.bid1(self.upCard)
-    #         if bid['call']:
-    #             self.configureRound(player, self.upCard.suit, bid['alone'])
-    #             if self.dealer is not self.out:
-    #                 self.dealer.pickUp(self.upCard)
-    #             return True
-
-    #     return False
-
-#     def bid2(self):
-#         for player in self.table.itPlayers(self.dealer.left):
-#             bid = player.bid2(self.upCard.suit)
-#             if bid['call']:
-#                 self.configureRound(player, bid['suit'], bid['alone'])
-#                 return True
-
-#         return False
-
-    # def configureRound(self, player, suit, alone):
-    #     self.trump = suit
-    #     self.loner = alone
-    #     self.maker = player.team
-    #     if self.loner:
-    #         self.leader = player.left
-    #         self.out = player.partner
-    #     else:
-    #         self.leader = self.dealer.left
-    #         self.out = None
-    #     self.phase = Phase.lay
-
-#     def playRound(self):
-#         leader = self.leader
-#         for i in range(5):
-#             sequence = self.table.itPlayers(leader, excluded={self.out})
-#             trick = Trick(self, leader)
-#             winner = trick.play(sequence)
-#             self.tricksTaken[winner.team] += 1
-#             leader = winner
 
 
 class Trick():
