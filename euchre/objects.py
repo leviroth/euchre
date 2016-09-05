@@ -1,6 +1,6 @@
 from random import shuffle
 from enum import Enum, unique
-from exceptions import *
+from euchre.exceptions import *
 import itertools
 from functools import wraps
 
@@ -84,6 +84,24 @@ class Card():
     def color(self):
         return self.suit.color
 
+    @classmethod
+    def fromStrs(cls, r, s):
+        rank = {'9': Rank.nine,
+                '10': Rank.ten,
+                'J': Rank.jack,
+                'Q': Rank.queen,
+                'K': Rank.king,
+                'A': Rank.ace
+                }
+
+        suit = {'C': Suit.clubs,
+                'D': Suit.diamonds,
+                'H': Suit.hearts,
+                'S': Suit.spades,
+                }
+
+        return cls(rank[r], suit[s])
+
 
 class Phase():
     def broadcast(self, message):
@@ -144,7 +162,7 @@ class DiscardPhase(Phase):
 class PlayPhase(Phase):
     def __init__(self, hand, trump, maker, loner):
         self.hand = hand
-        self.trump = suit
+        self.trump = trump
         self.loner = loner
         self.maker = maker
         if self.loner:
@@ -201,8 +219,7 @@ class Player():
 
         return real_decorator
 
-    def __init__(self, protocol):
-        self.protocol = protocol
+    def __init__(self):
         self.name = "<unnamed>"
 
     def __str__(self):
@@ -254,7 +271,7 @@ class Player():
             raise ValueError("May not renege")
 
         self.hand.remove(card)
-        self.table.play(self, card)
+        trick.play(self, card)
 
     @requireTurn(DiscardPhase)
     def pickUp(self, card):
@@ -341,11 +358,14 @@ class Hand():
     def passTurn(self):
         self.phase.passTurn()
 
-    def run(self):
+    def deal(self):
         self.table.deck.reset()
         for player in self.table.players.values():
             player.hand = {self.table.deck.draw() for _ in range(5)}
         self.upCard = self.table.deck.draw()
+
+    def run(self):
+        self.deal()
         self.phase = Bid1Phase(self, self.dealer)
 
 #     def call1(self, player, alone):
@@ -407,6 +427,9 @@ class Trick():
             self.card = card
             self.player = player
 
+        def __eq__(self, other):
+            return self.card == other.card and self.player == other.player
+
     def __init__(self, phase, leader):
         self.phase = phase
         self.trump = self.phase.trump
@@ -447,9 +470,9 @@ class Trick():
 
         if fst == 2 and card.rank == Rank.jack:
             if card.suit == self.trump:
-                snd = 11
+                snd = 21
             else:
-                snd = 10
+                snd = 20
         else:
             snd = int(card.rank)
 
@@ -535,10 +558,3 @@ class GameUI():
 
     def win(self, team):
         print("Team {} wins!".format(team))
-
-if __name__ == '__main__':
-    t = Table()
-    ps = [Player(n) for n in range(4)]
-    for i, p in enumerate(ps):
-        p.joinTable(t, i)
-    t.begin()
