@@ -62,10 +62,9 @@ class TrickTest(GameplayTest):
     def setUp(self):
         self.configure()
         self.table.begin()
-        self.p1 = self.table.players[0]
-        self.p2 = self.table.players[1]
-        self.hand = Hand(self.table, self.p1)
-        self.table.hand = self.hand
+        self.p1 = self.players[0]
+        self.p2 = self.players[1]
+        self.hand = self.table.hand
         self.hand.phase = PlayPhase(self.hand, Suit.spades,
                                     self.p2, False)
         self.trick = Trick(self.hand.phase, self.p2)
