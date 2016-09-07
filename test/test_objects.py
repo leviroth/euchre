@@ -4,39 +4,6 @@ from euchre.objects import *
 from euchre.exceptions import *
 
 
-# class CardTest(unittest.TestCase):
-#     def test_valid_cards(self):
-#         self.assertRaises(ValueError, Card, "10", "F")
-#         self.assertRaises(ValueError, Card, "8", "F")
-#         try:
-#             Card("10", "C")
-#         except ValueError:
-#             self.fail("Card(\"10\", \"C\") raised ValueError")
-
-#     def test_eq(self):
-#         self.assertTrue(Card("J", "H"), Card("j", "h"))
-class GameplayTest(unittest.TestCase):
-    def configure(self):
-        self.table = Table()
-        self.players = [Player() for _ in range(4)]
-        for i, p in enumerate(self.players):
-            p.setName(str(i))
-            p.joinTable(self.table, i)
-
-    @staticmethod
-    def cardKey(x):
-        suitKey = {Suit.clubs: 1,
-                   Suit.diamonds: 2,
-                   Suit.hearts: 3,
-                   Suit.spades: 4
-                   }
-        return (suitKey[x.suit], int(x.rank))
-
-    @staticmethod
-    def cardSort(deck):
-        deck.remaining.sort(key=GameplayTest.cardKey)
-
-
 class DeckTest(unittest.TestCase):
     def setUp(self):
         self.deck = Deck()
@@ -55,58 +22,6 @@ class DeckTest(unittest.TestCase):
         self.assertIn(myCard, self.deck.cards)
         self.assertNotIn(myCard, self.deck.remaining)
 
-
-class TrickTest(GameplayTest):
-    @patch('euchre.objects.Deck.shuffle',
-           new=GameplayTest.cardSort)
-    def setUp(self):
-        self.configure()
-        self.table.begin()
-        self.p1 = self.players[0]
-        self.p2 = self.players[1]
-        self.hand = self.table.hand
-        self.hand.phase = PlayPhase(self.hand, Suit.spades,
-                                    self.p2, False)
-        self.trick = Trick(self.hand.phase, self.p2)
-        self.hand.phase.trick = self.trick
-        self.trick.run()
-
-    def test_relativeSuit(self):
-        self.assertTrue(self.trick.following(Card.fromStrs("10", "H")))
-        self.p2.playCard(Card(Rank.nine, Suit.spades))
-        self.assertEqual(Suit.spades,
-                         self.trick.relativeSuit(Card.fromStrs("J", "C")))
-        self.assertEqual(Suit.spades,
-                         self.trick.relativeSuit(Card.fromStrs("Q", "S")))
-        self.assertEqual(Suit.clubs,
-                         self.trick.relativeSuit(Card.fromStrs("Q", "C")))
-        self.assertEqual(Suit.spades,
-                         self.trick.relativeSuit(Card.fromStrs("10", "S")))
-        self.assertTrue(self.trick.following(Card.fromStrs("J", "C")))
-        self.assertFalse(self.trick.following(Card.fromStrs("J", "H")))
-
-    @patch('euchre.objects.Trick.ledSuit')
-    def test_relativeRank(self, ledSuitMock):
-        ledSuitMock.return_value = Suit.spades
-        self.assertEqual((2, 21),
-                         self.trick.relativeRank(Card.fromStrs("J", "S")))
-        self.assertEqual((2, 20),
-                         self.trick.relativeRank(Card.fromStrs("J", "C")))
-        self.assertEqual((0, 12),
-                         self.trick.relativeRank(Card.fromStrs("Q", "C")))
-
-    @patch('euchre.objects.PlayPhase.trickWon')
-    def test_play(self, wonMock):
-        self.trick.play(self.p2, Card(Rank.jack, Suit.diamonds))
-        self.assertEqual(self.trick.Play(Card(Rank.jack,
-                                              Suit.diamonds), self.p2),
-                         self.trick.cards[0])
-        self.assertEqual(self.players[2], self.hand.phase.turn())
-        self.assertFalse(wonMock.called)
-        self.trick.play(self.players[2], Card(Rank.jack, Suit.diamonds))
-        self.trick.play(self.players[3], Card(Rank.jack, Suit.diamonds))
-        self.trick.play(self.players[0], Card(Rank.jack, Suit.diamonds))
-        self.assertTrue(wonMock.called)
 
 # class TableTest(unittest.TestCase):
 #     def setUp(self):
