@@ -28,14 +28,16 @@ class TrickTest(PhaseTest):
         self.assertTrue(self.trick.following(Card.fromStrs("J", "C")))
         self.assertFalse(self.trick.following(Card.fromStrs("J", "H")))
 
-    @patch('euchre.phases.Trick.ledSuit', lambda x: Suit.spades)
-    def test_relativeRank(self, ):
+    @patch('euchre.phases.Trick.ledSuit', lambda x: Suit.clubs)
+    def test_relativeRank(self):
         self.assertEqual((2, 21),
                          self.trick.relativeRank(Card.fromStrs("J", "S")))
         self.assertEqual((2, 20),
                          self.trick.relativeRank(Card.fromStrs("J", "C")))
+        self.assertEqual((1, 9),
+                         self.trick.relativeRank(Card.fromStrs("9", "C")))
         self.assertEqual((0, 12),
-                         self.trick.relativeRank(Card.fromStrs("Q", "C")))
+                         self.trick.relativeRank(Card.fromStrs("Q", "D")))
 
     @patch('euchre.phases.Trick.winner')
     def test_play(self, WinnerMock):
@@ -48,5 +50,15 @@ class TrickTest(PhaseTest):
         self.trick.play(self.players[1], Card(Rank.jack, Suit.diamonds))
         self.trick.play(self.players[2], Card(Rank.jack, Suit.diamonds))
         self.trick.play(self.players[3], Card(Rank.jack, Suit.diamonds))
-        self.assertEqual(self.trick.leader, self.trick.turn())
+        self.assertEqual(self.trick.leader, self.trick.turn)
         self.phase.trickWon.assert_called_once_with(WinnerMock())
+
+    # We could patch relativeRank here
+    def test_winner(self):
+        self.trick.cards = (
+            Trick.Play(Card(Rank.queen, Suit.clubs), self.players[0]),
+            Trick.Play(Card(Rank.ace, Suit.diamonds), self.players[1]),
+            Trick.Play(Card(Rank.nine, Suit.spades), self.players[2]),
+            Trick.Play(Card(Rank.ace, Suit.clubs), self.players[3])
+        )
+        self.assertEqual(self.players[2], self.trick.winner())

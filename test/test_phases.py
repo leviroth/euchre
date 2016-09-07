@@ -4,15 +4,41 @@ from euchre.objects import Suit
 from euchre.phases import *
 
 
-class PhaseTest(unittest.TestCase):
+class PlayTest(unittest.TestCase):
     def setUp(self):
         self.table = Mock()
-        self.hand = Mock()
         self.players = [Mock() for _ in range(4)]
         for i in range(4):
             self.players[i].left = self.players[(i + 1) % 4]
             self.players[i].partner = self.players[(i + 2) % 4]
             self.players[i].team = i % 2
+        self.table.players = dict(enumerate(self.players))
+
+
+class PhaseTest(PlayTest):
+    def setUp(self):
+        super().setUp()
+        self.hand = Mock()
+        self.hand.dealer = self.players[0]
+
+
+class BidPhaseTest(PhaseTest):
+    @patch('euchre.phases.Bid2Phase')
+    def test_Bid1Phase(self, BidMock):
+        self.phase = Bid1Phase(self.hand)
+        self.phase.passTurn()
+        self.phase.passTurn()
+        self.phase.passTurn()
+        self.assertFalse(BidMock.called)
+        self.phase.passTurn()
+        self.assertTrue(BidMock.called)
+
+    def test_Bid2Phase(self):
+        self.phase = Bid2Phase(self.hand)
+        self.phase.passTurn()
+        self.phase.passTurn()
+        self.phase.passTurn()
+        self.assertRaises(ValueError, self.phase.passTurn)
 
 
 class PlayPhaseTest(PhaseTest):
@@ -76,3 +102,39 @@ class PlayPhaseTest(PhaseTest):
         calls.append((0, 4))
 
         self.table.updateScore.assert_has_calls([call(*x) for x in calls])
+
+
+class DiscardPhaseTest(PhaseTest):
+    def setUp(self):
+        super().setUp()
+        self.phase = DiscardPhase(self.hand, self.players[1], False)
+
+    def test_run(self):
+        self.phase.run()
+        self.assertTrue(self.hand.dealer.hand.add.called)
+
+    @patch('euchre.phases.PlayPhase')
+    def test_proceed(self, PPMock):
+        self.phase.proceed()
+        self.hand.runPhase.assert_called_with(
+            PPMock(self.phase.hand,
+                   self.phase.hand.upCard.suit, self.players[1], False)
+        )
+
+
+class HandTest(PlayTest):
+    def setUp(self):
+        super().setUp()
+        self.hand = Hand(self.table, self.players[0])
+
+    def test_hasPriority(self):
+        self.assertFalse(self.hand.hasPriority(self.players[1], Bid1Phase))
+        self.hand.run()
+        self.assertTrue(self.hand.hasPriority(self.players[1], Bid1Phase))
+
+    def test_deal(self):
+        self.hand.deal()
+
+        for player in self.players:
+            self.assertEqual(5, len(player.hand))
+        self.assertIsNotNone(self.hand.upCard)
