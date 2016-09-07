@@ -140,7 +140,7 @@ class Player():
         if call:
             self.table.hand.phase.call(self, alone)
         else:
-            self.table.hand.passTurn()
+            self.table.hand.phase.passTurn()
 
     @requireTurn(phases.Bid2Phase)
     def bid2(self, call, alone, suit=None):
@@ -151,7 +151,7 @@ class Player():
         if call:
             self.table.hand.phase.call(self, alone, suit)
         else:
-            self.table.hand.passTurn()
+            self.table.hand.phase.passTurn()
 
     @requireTurn(phases.PlayPhase)
     def playCard(self, card):
@@ -177,7 +177,6 @@ class Player():
 class Table():
     def __init__(self):
         self.players = {}
-        self.deck = Deck()
         self.points = {x: 0 for x in range(2)}
         self.won = False
 
@@ -193,7 +192,7 @@ class Table():
     def hasPriority(self, *args, **kwargs):
         try:
             return self.hand.hasPriority(*args, **kwargs)
-        except NameError:
+        except AttributeError:
             return False
 
     def currentTrick(self):

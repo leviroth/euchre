@@ -8,43 +8,42 @@ class Phase():
     def broadcast(self, message):
         self.hand.broadcast(message)
 
+    def run(self):
+        pass
+
 
 class BidPhase(Phase):
-    def __init__(self, hand, dealer):
+    def __init__(self, hand):
         super().__init__(hand)
         self.upCard = self.hand.upCard
-        self.dealer = dealer
+        self.dealer = self.hand.dealer
         self._turn = self.dealer.left
+
+    @property
+    def turn(self):
+        return self._turn
 
 
 class Bid1Phase(BidPhase):
-    def turn(self):
-        return self._turn
-
     def call(self, player, alone):
-        self.hand.phase = DiscardPhase(self.hand, player, alone)
-        self.hand.phase.run()
+        self.hand.runPhase(DiscardPhase(self.hand, player, alone))
 
     def passTurn(self):
         if self.turn == self.dealer:
-            self.hand.phase = Bid2Phase(self.hand, self.dealer)
+            self.hand.runPhase(Bid2Phase(self.hand))
         else:
-            self.turn = self.turn.left
+            self._turn = self._turn.left
 
 
 class Bid2Phase(BidPhase):
-    def turn(self):
-        return self._turn
-
     def call(self, player, suit, alone):
-        self.hand.phase = PlayPhase(self.hand, suit, player, alone)
-        self.hand.phase.run()
+        self.hand.runPhase(PlayPhase(self.hand, suit, player, alone))
 
     def passTurn(self):
         if self.turn == self.dealer:
             raise ValueError("Dealer is stuck")
         else:
-            self.turn = self.turn.left
+            self._turn = self._turn.left
 
 
 class DiscardPhase(Phase):
@@ -56,21 +55,22 @@ class DiscardPhase(Phase):
     def run(self):
         self.hand.dealer.hand.add(self.hand.upCard)
 
+    @property
     def turn(self):
         return self.hand.dealer
 
     def proceed(self):
-        self.hand.phase = PlayPhase(self.hand, self.hand.upCard.suit,
-                                    self.maker, self.loner)
+        self.hand.runPhase(PlayPhase(self.hand, self.hand.upCard.suit,
+                                     self.maker, self.alone))
 
 
 class PlayPhase(Phase):
-    def __init__(self, hand, trump, maker, loner):
+    def __init__(self, hand, trump, maker, alone):
         super().__init__(hand)
         self.trump = trump
-        self.loner = loner
+        self.alone = alone
         self.maker = maker
-        if self.loner:
+        if self.alone:
             self.leader = self.maker.left
             self.out = self.maker.partner
         else:
@@ -82,8 +82,9 @@ class PlayPhase(Phase):
         self.trick = Trick(self, self.leader)
         self.trick.run()
 
+    @property
     def turn(self):
-        return self.trick.turn()
+        return self.trick.turn
 
     def trickWon(self, winner):
         self.tricksTaken[winner.team] += 1
@@ -95,15 +96,14 @@ class PlayPhase(Phase):
             self.trick.run()
 
     def scoreRound(self):
-        winningTeam = max(self.tricksTaken,
-                          key=lambda x: self.tricksTaken[x])
-        tricksTaken = self.tricksTaken[winningTeam]
+        winningTeam, tricksTaken = max(self.tricksTaken.items(),
+                                       key=lambda x: x[1])
 
         if winningTeam != self.maker.team:
             points = 2
         else:
             if tricksTaken == 5:
-                if self.loner:
+                if self.alone:
                     points = 4
                 else:
                     points = 2
@@ -131,6 +131,7 @@ class Trick():
     def run(self):
         self._turn = self.leader
 
+    @property
     def turn(self):
         return self._turn
 
@@ -187,26 +188,28 @@ class Hand():
     def __init__(self, table, dealer):
         self.table = table
         self.dealer = dealer
+        self.deck = euchre.objects.Deck()
 
     def broadcast(self, message):
         self.table.broadcast(message)
 
     def hasPriority(self, player, phase):
         try:
-            return self.phase.turn() == player \
+            return self.phase.turn == player \
                     and self.phase.__class__ == phase
-        except NameError:
+        except AttributeError:
             return False
 
-    def passTurn(self):
-        self.phase.passTurn()
+    def runPhase(self, phase):
+        self.phase = phase
+        self.phase.run()
 
     def deal(self):
-        self.table.deck.reset()
+        self.deck.reset()
         for player in self.table.players.values():
-            player.hand = {self.table.deck.draw() for _ in range(5)}
-        self.upCard = self.table.deck.draw()
+            player.hand = {self.deck.draw() for _ in range(5)}
+        self.upCard = self.deck.draw()
 
     def run(self):
         self.deal()
-        self.phase = Bid1Phase(self, self.dealer)
+        self.runPhase(Bid1Phase(self))
