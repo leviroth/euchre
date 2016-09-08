@@ -130,6 +130,8 @@ class HandTest(PlayTest):
     def test_hasPriority(self):
         self.assertFalse(self.hand.hasPriority(self.players[1], Bid1Phase))
         self.hand.run()
+        self.assertFalse(self.hand.hasPriority(self.players[0], Bid1Phase))
+        self.assertFalse(self.hand.hasPriority(self.players[1], Bid2Phase))
         self.assertTrue(self.hand.hasPriority(self.players[1], Bid1Phase))
 
     def test_deal(self):

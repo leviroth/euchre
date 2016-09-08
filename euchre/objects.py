@@ -155,7 +155,7 @@ class Player():
 
     @requireTurn(phases.PlayPhase)
     def playCard(self, card):
-        trick = self.table.currentTrick()
+        trick = self.table.currentTrick
         if card not in self.hand:
             raise ValueError("Card not in hand")
         if not trick.following(card) \
@@ -195,6 +195,7 @@ class Table():
         except AttributeError:
             return False
 
+    @property
     def currentTrick(self):
         return self.hand.phase.trick
 
