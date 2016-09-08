@@ -28,7 +28,7 @@ class TrickTest(PhaseTest):
         self.assertTrue(self.trick.following(Card.fromStrs("J", "C")))
         self.assertFalse(self.trick.following(Card.fromStrs("J", "H")))
 
-    @patch('euchre.phases.Trick.ledSuit', lambda x: Suit.clubs)
+    @patch('euchre.phases.Trick.ledSuit', new=Suit.clubs)
     def test_relativeRank(self):
         self.assertEqual((2, 21),
                          self.trick.relativeRank(Card.fromStrs("J", "S")))

@@ -144,12 +144,13 @@ class Player():
 
     @requireTurn(phases.Bid2Phase)
     def bid2(self, call, alone, suit=None):
-        if suit is None:
-            raise ValueError("Must choose suit")
-        if suit is self.table.hand.upCard.suit:
-            raise ValueError("Suit was turned down")
         if call:
-            self.table.hand.phase.call(self, alone, suit)
+            if suit is None:
+                raise ValueError("Must choose suit")
+            if suit is self.table.hand.upCard.suit:
+                raise ValueError("Suit was turned down")
+            else:
+                self.table.hand.phase.call(self, alone, suit)
         else:
             self.table.hand.phase.passTurn()
 
@@ -158,16 +159,16 @@ class Player():
         trick = self.table.currentTrick
         if card not in self.hand:
             raise ValueError("Card not in hand")
-        if not trick.following(card) \
-            and trick.ledSuit() not in \
-                [trick.relativeSuit(c) for c in self.hand]:
+        if (not trick.following(card)) \
+            and (trick.ledSuit in
+                 [trick.relativeSuit(c) for c in self.hand]):
             raise ValueError("May not renege")
 
         self.hand.remove(card)
         trick.play(self, card)
 
     @requireTurn(phases.DiscardPhase)
-    def pickUp(self, card):
+    def discard(self, card):
         if card not in self.hand:
             raise ValueError("You don't have that card")
         self.hand.remove(card)
