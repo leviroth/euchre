@@ -202,6 +202,7 @@ class Table():
 
     def run(self):
         for i in range(4):
+            self.players[i].n = i
             self.players[i].left = self.players[(i + 1) % 4]
             self.players[i].partner = self.players[(i + 2) % 4]
             self.players[i].team = i % 2
