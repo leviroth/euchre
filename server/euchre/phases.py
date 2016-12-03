@@ -25,6 +25,9 @@ class BidPhase(Phase):
 
 
 class Bid1Phase(BidPhase):
+    def __str__(self):
+        return "bid1"
+
     def call(self, player, alone):
         self.hand.runPhase(DiscardPhase(self.hand, player, alone))
 
@@ -36,6 +39,9 @@ class Bid1Phase(BidPhase):
 
 
 class Bid2Phase(BidPhase):
+    def __str__(self):
+        return "bid2"
+
     def call(self, player, suit, alone):
         self.hand.runPhase(PlayPhase(self.hand, suit, player, alone))
 
@@ -51,6 +57,9 @@ class DiscardPhase(Phase):
         super().__init__(hand)
         self.maker = player
         self.alone = alone
+
+    def __str__(self):
+        return "discard"
 
     def run(self):
         self.hand.dealer.hand.add(self.hand.upCard)
@@ -77,6 +86,9 @@ class PlayPhase(Phase):
             self.leader = self.hand.dealer.left
             self.out = None
         self.tricksTaken = {x: 0 for x in range(2)}
+
+    def __str__(self):
+        return "play"
 
     def run(self):
         self.trick = Trick(self, self.leader)

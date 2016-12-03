@@ -14,10 +14,10 @@ class Suit(Enum):
     def __str__(self):
         return self.value
 
-    clubs = "Clubs"
-    diamonds = "Diamonds"
-    hearts = "Hearts"
-    spades = "Spades"
+    clubs = "C"
+    diamonds = "D"
+    hearts = "H"
+    spades = "S"
 
     @property
     def color(self):
@@ -43,10 +43,10 @@ class Rank(Enum):
 
     nine = "9"
     ten = "10"
-    jack = "Jack"
-    queen = "Queen"
-    king = "King"
-    ace = "Ace"
+    jack = "J"
+    queen = "Q"
+    king = "K"
+    ace = "A"
 
 
 class Deck():
@@ -78,7 +78,7 @@ class Card():
         return (self.rank, self.suit).__hash__()
 
     def __str__(self):
-        return str(self.rank) + " of " + str(self.suit)
+        return str(self.rank) + "." + str(self.suit)
 
     @property
     def color(self):
@@ -136,14 +136,15 @@ class Player():
         self.table.removePlayer(self.position)
 
     @requireTurn(phases.Bid1Phase)
-    def bid1(self, call, alone):
+    def bid1(self, call, alone=False):
         if call:
             self.table.hand.phase.call(self, alone)
+            return self.table.hand.upCard.suit
         else:
             self.table.hand.phase.passTurn()
 
     @requireTurn(phases.Bid2Phase)
-    def bid2(self, call, alone, suit=None):
+    def bid2(self, call, alone=False, suit=None):
         if call:
             if suit is None:
                 raise ValueError("Must choose suit")
