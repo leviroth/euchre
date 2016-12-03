@@ -208,7 +208,7 @@ class Hand():
 
     def hasPriority(self, player, phase):
         try:
-            return self.phase.turn == player \
+            return self.phase.turn is player \
                     and self.phase.__class__ == phase
         except AttributeError:
             return False
