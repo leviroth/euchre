@@ -195,13 +195,15 @@ class Trick extends Component {
 }
 
 function Scoreboard(props) {
+  const yourTeam = props.team;
+  const otherTeam = 1 - yourTeam;
   return (
     <div style={{textAlign: "left"}}>
       {(props.dealing) ? <div>You are the dealer</div> : null}
       {(props.turn) ? <div>It's your turn</div> : null}
       {(props.trump !== undefined) ? <div>Trump: {props.trump}</div> : null}
-      <div>Tricks taken: {props.tricks} </div>
-      <div>Score: {props.yourScore}–{props.theirScore}</div>
+      <div>Tricks taken: {props.tricks[yourTeam]}–{props.tricks[otherTeam]} </div>
+      <div>Score: {props.scores[yourTeam]}–{props.scores[otherTeam]}</div>
     </div>
   );
 }
@@ -381,11 +383,14 @@ class App extends Component {
         <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
         {this.renderBidControls()}
         <button onClick={() => this.run()} >run</button>
-        <Scoreboard tricks="2" yourScore={this.state.score[team]} theirScore={this.state.score[1 - team]}
         {phase === "play" && <Trick player={this.player} cards={currentTrick} />} 
+        <Scoreboard
           dealing={this.state.dealer === this.player}
-          turn={this.myTurn()}
+          scores={this.state.score}
+          team={team}
+          tricks={this.state.trickScore}
           trump={this.state.trump}
+          turn={this.myTurn()}
         />
       </div>
     );
