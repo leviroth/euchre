@@ -147,6 +147,40 @@ class Hand extends Component {
   }
 }
 
+class Trick extends Component {
+  render() {
+    const bottom = this.props.player;
+    const left = (this.props.player + 1) % 4;
+    const top = (this.props.player + 2) % 4;
+    const right = (this.props.player + 3) % 4;
+    const cards = this.props.cards;
+    return (
+      <div >
+      {cards[top] &&
+       <div className="tricktop trickcard">
+         {FaceUpCard.fromStr(cards[top], () => false) }
+       </div>
+      }
+      {cards[bottom] &&
+       <div className="trickbot trickcard">
+         {FaceUpCard.fromStr(cards[bottom], () => false) }
+       </div>
+      }
+      {cards[left] &&
+       <div className="trickleft trickcard">
+         {FaceUpCard.fromStr(cards[left], () => false) }
+       </div>
+      }
+      {cards[right] &&
+       <div className="trickright trickcard">
+         {FaceUpCard.fromStr(cards[right], () => false) }
+       </div>
+      }
+      </div>
+    );
+  }
+}
+
 function Scoreboard(props) {
   return (
     <div style={{textAlign: "left"}}>
@@ -196,6 +230,10 @@ class App extends Component {
           session.subscribe('realm1.state',
             (res) => this.setState(res[0]));
           console.log("subscribe point");
+          session.subscribe('realm1.card_played',
+                            ((res) => this.pushCard(res[0][0], res[0][1])));
+          session.subscribe('realm1.newhand', (res) => this.newHand());
+          session.subscribe('realm1.newtrick', (res) => this.newTrick());
         })
         .catch(console.log);
     };
@@ -208,6 +246,32 @@ class App extends Component {
 
     // now actually open the connection
     this.connection.open();
+  }
+
+  newTrick() {
+    this.setState((prevState) =>
+      update(prevState, {
+        tricks: {
+          $push: [[...Array(4)]]
+        }
+      }));
+  }
+
+  newHand() {
+    this.setState({tricks: []});
+  }
+
+  pushCard(card, position) {
+    const currentIndex = this.state.tricks.length - 1;
+    this.setState((prevState) =>
+      update(prevState, {
+        tricks: {
+          [currentIndex]: {
+            [position]: {$set: card}
+          }
+        }
+      })
+    );
   }
 
   run() {
@@ -288,6 +352,11 @@ class App extends Component {
   render() {
     const topPlayer = (this.player + 2) % 4;
     const team = this.player % 2;
+    const phase = this.state.phase;
+    let currentTrick;
+    if (phase === "play") {
+      currentTrick = this.state.tricks[this.state.tricks.length - 1];
+    }
     return (
       <div className="App">
         <FaceDownHand size={this.handSize(topPlayer)} />
@@ -296,6 +365,7 @@ class App extends Component {
         {this.renderBidControls()}
         <button onClick={() => this.run()} >run</button>
         <Scoreboard tricks="2" yourScore={this.state.score[team]} theirScore={this.state.score[1 - team]}
+        {phase === "play" && <Trick player={this.player} cards={currentTrick} />} 
           dealing={this.state.dealer === this.player}
           turn={this.myTurn()}
           trump={this.state.trump}
