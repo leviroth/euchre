@@ -164,6 +164,7 @@ class Player():
             and (trick.ledSuit in
                  [trick.relativeSuit(c) for c in self.hand]):
             raise ValueError("May not renege")
+        self.table.ui.card_played([str(card), self.position])
 
         self.hand.remove(card)
         trick.play(self, card)
@@ -177,13 +178,15 @@ class Player():
 
 
 class Table():
-    def __init__(self):
+    def __init__(self, broadcaster, ui):
         self.players = {}
         self.points = {x: 0 for x in range(2)}
         self.won = False
+        self.broadcaster = broadcaster
+        self.ui = ui
 
     def broadcast(self, message):
-        print(message)
+        self.broadcaster(message)
 
     def addPlayer(self, player, position):
         self.players[position] = player
@@ -226,3 +229,10 @@ class Table():
             self.win(team)
         else:
             self.nextHand()
+
+
+class UserInterface:
+    def __init__(self, new_hand, new_trick, card_played):
+        self.new_hand = new_hand
+        self.new_trick = new_trick
+        self.card_played = card_played

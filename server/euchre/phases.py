@@ -4,6 +4,7 @@ import euchre
 class Phase():
     def __init__(self, hand):
         self.hand = hand
+        self.ui = hand.ui
 
     def broadcast(self, message):
         self.hand.broadcast(message)
@@ -142,6 +143,7 @@ class Trick():
 
     def run(self):
         self._turn = self.leader
+        self.phase.ui.new_trick()
 
     @property
     def turn(self):
@@ -202,6 +204,7 @@ class Hand():
         self.table = table
         self.dealer = dealer
         self.deck = euchre.objects.Deck()
+        self.ui = table.ui
 
     def broadcast(self, message):
         self.table.broadcast(message)
@@ -225,4 +228,5 @@ class Hand():
 
     def run(self):
         self.deal()
+        self.ui.new_hand()
         self.runPhase(Bid1Phase(self))

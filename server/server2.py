@@ -10,7 +10,25 @@ class MyComponent(ApplicationSession):
 
         self.players = dict()
         self.player_count = 0
-        self.t = euchre.objects.Table()
+        self.hand = None
+
+        def deal():
+            for player_id, player in self.players.items():
+                self.publish('realm1.p{}.hand'.format(player_id),
+                             [str(card) for card in player.hand])
+            self.publish('realm1.newhand')
+
+        def new_trick():
+            self.publish('realm1.newtrick')
+
+        ui = euchre.objects.UserInterface(
+            new_hand=deal,
+            new_trick=new_trick,
+            card_played=lambda x: self.publish('realm1.card_played', x)
+            )
+
+        self.t = euchre.objects.Table(lambda x: self.publish('realm1.msg', x),
+                                      ui)
 
         def create_player(name="Player"):
             player = euchre.objects.Player()
@@ -21,7 +39,6 @@ class MyComponent(ApplicationSession):
 
         async def run():
             print("running")
-            self.t.run()
             for player_id, player in self.players.items():
                 await self.register(
                     functools.partial(bid1, player),
@@ -35,19 +52,9 @@ class MyComponent(ApplicationSession):
                 await self.register(
                     functools.partial(play_card, player),
                     'realm1.p{}.play'.format(player_id))
-
+            self.t.run()
             deal()
-
-        def deal():
-            for player_id, player in self.players.items():
-                self.publish('realm1.p{}.hand'.format(player_id),
-                             [str(card) for card in player.hand])
-            self.publish('realm1.state', {
-                "upcard": str(self.t.hand.upCard),
-                "phase": "bid1",
-                "dealer": self.t.hand.dealer.position,
-                "turn": self.t.hand.phase.turn.position
-            })
+            publish_state()
 
         def join_table(player, position):
             self.players[player].joinTable(self.t, position)
@@ -61,12 +68,20 @@ class MyComponent(ApplicationSession):
             except AttributeError:
                 pass
 
+            tricks_taken = [0, 0]
+            try:
+                tricks_taken = list(self.t.hand.phase.tricksTaken.values())
+            except AttributeError:
+                pass
+
             self.publish('realm1.state', {
                 "upcard": str(self.t.hand.upCard),
                 "phase": str(self.t.hand.phase),
                 "turn": self.t.hand.phase.turn.position,
                 "dealer": self.t.hand.dealer.position,
-                "alone": loner
+                "score": self.t.points,
+                "alone": loner,
+                "trickScore": tricks_taken
             })
 
         def bid1(player, call, alone):
