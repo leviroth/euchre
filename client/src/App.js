@@ -373,6 +373,10 @@ class App extends Component {
     return (
       <div className="App">
         <FaceDownHand size={this.handSize(topPlayer)} />
+        {this.state.phase && this.state.phase.startsWith("bid") &&
+         <div className="upcard">
+           {FaceUpCard.fromStr(this.state.upcard, () => false)}
+         </div>}
         <div>Player {this.player}</div>
         <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
         {this.renderBidControls()}
@@ -383,7 +387,6 @@ class App extends Component {
           turn={this.myTurn()}
           trump={this.state.trump}
         />
-        {(this.state.upcard !== null) ? <Hand cards={[this.state.upcard]} onClick={(i) => {}} /> : null}
       </div>
     );
   }
