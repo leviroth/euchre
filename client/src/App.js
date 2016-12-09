@@ -356,6 +356,21 @@ class App extends Component {
     }
   }
 
+  debugHand() {
+    this.player = 1;
+    this.setState({
+      hand: ["K.H",
+             "Q.D",
+             "10.H",
+             "J.S",
+             "A.C"
+      ],
+      upcard: "J.D",
+      turn: 1,
+      phase: "bid2"
+    });
+  }
+
   handSize(player) {
     if (this.state.alone === player) {
       return 0;
@@ -364,6 +379,7 @@ class App extends Component {
     const playedCards = tricks.map((trick) => trick[player]).filter((x) => !!x);
     return playedCards.length;
   }
+
   render() {
     const topPlayer = (this.player + 2) % 4;
     const team = this.player % 2;
@@ -382,7 +398,6 @@ class App extends Component {
         <div>Player {this.player}</div>
         <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
         {this.renderBidControls()}
-        <button onClick={() => this.run()} >run</button>
         {phase === "play" && <Trick player={this.player} cards={currentTrick} />} 
         <Scoreboard
           dealing={this.state.dealer === this.player}
@@ -392,6 +407,10 @@ class App extends Component {
           trump={this.state.trump}
           turn={this.myTurn()}
         />
+        <div className="debug-buttons" >
+          <UIButton onClick={() => this.run()} >run</UIButton>
+          <UIButton onClick={() => this.debugHand()}>debug</UIButton>
+        </div>
       </div>
     );
   }
