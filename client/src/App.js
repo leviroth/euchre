@@ -277,10 +277,20 @@ class App extends Component {
     }
   }
 
+  handSize(player) {
+    if (this.state.alone === player) {
+      return 0;
+    }
+    const tricks = this.state.tricks;
+    const playedCards = tricks.map((trick) => trick[player]).filter((x) => !!x);
+    return playedCards.length;
+  }
   render() {
+    const topPlayer = (this.player + 2) % 4;
     const team = this.player % 2;
     return (
       <div className="App">
+        <FaceDownHand size={this.handSize(topPlayer)} />
         <div>Player {this.player}</div>
         <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
         {this.renderBidControls()}
