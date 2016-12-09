@@ -33,6 +33,24 @@ class Card extends Component {
   }
 }
 
+class FaceDownHand extends Component {
+  render() {
+    const n = this.props.size;
+    return (
+      <div className="hand tophand">
+        {[...Array(n)].map((x, i) =>
+          <Card
+            key={i}
+            color="black"
+            onClick={() => false} />
+         )
+        }
+      </div>
+    );
+  }
+}
+
+
 function AloneControl(props) {
   return (
     <div>
