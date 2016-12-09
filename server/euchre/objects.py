@@ -1,6 +1,6 @@
 from random import shuffle
 from enum import Enum, unique
-from euchre.exceptions import *
+from euchre.exceptions import TurnError
 from euchre import phases
 import itertools
 from functools import wraps

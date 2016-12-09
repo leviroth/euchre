@@ -101,7 +101,7 @@ class PlayPhase(Phase):
 
     def trickWon(self, winner):
         self.tricksTaken[winner.team] += 1
-        self.hand.broadcast(str(winner) + "won the trick")
+        self.hand.broadcast(str(winner) + " won the trick")
         if sum(self.tricksTaken.values()) == 5:
             self.scoreRound()
         else:
