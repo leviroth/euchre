@@ -119,27 +119,22 @@ class FaceUpCard extends Component {
       </Card>
     );
   }
+
+  static fromStr(s, onClick) {
+    const [rank, suit] = s.split('.');
+    return (
+      <FaceUpCard suit={suit} rank={rank} key={rank + suit} onClick={onClick} />
+    );
+  }
 }
 
 class Hand extends Component {
-  cardFromStr(s) {
-    const [rank, suit] = s.split('.');
-    return {
-      rank,
-      suit
-    };
-  }
-
   render() {
-    const cards = this.props.cards.map(this.cardFromStr, this);
+    const cardStrs = this.props.cards
     return (
-      <div>{cards.map((card, index) => {
+      <div className="hand myhand">{cardStrs.map((cardStr, index) => {
           return (
-            <FaceUpCard
-              suit={card.suit}
-              rank={card.rank}
-              key={card.rank + card.suit}
-              onClick={() => this.props.onClick(index)} />
+            FaceUpCard.fromStr(cardStr, () => this.props.onClick(index))
           );
         })}
       </div>
