@@ -1,5 +1,7 @@
 .App {
+  position: relative;
   text-align: center;
+  height: 100%;
 }
 
 .App-logo {
@@ -19,42 +21,144 @@
 }
 
 @keyframes App-logo-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
+
 /* .container_12 { */
+
+
 /*     background-color: #BDBCA8; */
 
+
 /*     height: 100%; */
+
+
 /* } */
 
 body {
-    background-color: #E8E6CF;
+  background-color: #E8E6CF;
 }
 
 .cardblack,
 .cardred {
-    background-color: #E8E6CF;
-    display: inline-block;
-    margin: 3px;
-    font-size: 2em;
-    padding: 10px 5px;
-    width: 100px;
-    height: 150px;
-    border: #000 1px solid;
-    border-radius: 3px;
+  background-color: #E8E6CF;
+  display: inline-block;
+  margin: 3px;
+  font-size: 2em;
+  padding: 10px 5px;
+  width: 10%;
+  height: 100%;
+  border: #000 1px solid;
+  border-radius: 3px;
 }
 
 .cardblack {
-    color: #0F0003;
+  color: #0F0003;
 }
 
 .cardred {
-    color: #690012;
+  color: #690012;
 }
 
 #root {
-    background-color: #073142;
-    color: #E8E6CF;
+  height: 600px;
+  background-color: #073142;
+  color: #E8E6CF;
+}
+
+.hand {
+  position: absolute;
+  width: 100%;
+}
+
+.myhand,
+.tophand {
+  height: 15%;
+}
+
+.tophand {
+  top: 5%;
+}
+
+.myhand {
+  bottom: 10%;
+}
+
+.trickcard {
+  height: 15%;
+  width: 100%;
+  position: absolute;
+}
+
+.tricktop {
+  top: 25%;
+}
+
+.trickbot {
+  top: 50%;
+}
+
+.trickleft {
+  left: -15%;
+  top: 37%;
+}
+
+.trickright {
+  left: 15%;
+  top: 37%;
+}
+
+.upcard {
+  position: absolute;
+  width: 100%;
+  height: 15%;
+  top: 40%;
+}
+
+.button {
+  background-color: #E8E6CF;
+  color: #0F0003;
+  display: inline-block;
+  flex-basis: 100%;
+  margin: 3px;
+  padding: 10px 5px;
+  border: #000 1px solid;
+  border-radius: 3px;
+  position: static;
+}
+
+.bid-controls {
+  position: relative;
+  display: flex;
+  top: 60%;
+  width: 40%;
+  margin-left: auto;
+  margin-right: auto;
+  /* font-size: 2em; */
+}
+
+.control-label {
+  margin: 3px;
+  flex-basis: 120%;
+  padding: 10px 5px;
+}
+
+.bid-controls>.button {
+  /* width: 5%; */
+}
+
+.debug-buttons {
+  position: fixed;
+  bottom: 6px;
+}
+
+.debug-buttons > .button {
+  background-color: #073142;
+  color: #E8E6CF;
 }
