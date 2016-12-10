@@ -20,6 +20,12 @@ function suitToSymbol(suit) {
   }
 }
 
+function UIButton(props) {
+  return (
+    <div className="button" onClick={() => props.onClick()}>{props.children}</div>
+  )
+}
+
 class Card extends Component {
   render() {
     return (
@@ -53,10 +59,10 @@ class FaceDownHand extends Component {
 
 function AloneControl(props) {
   return (
-    <div>
-      Go alone?
-      <button onClick={() => props.onClick(true)}>Yes</button>
-      <button onClick={() => props.onClick(false)}>No</button>
+    <div className={props.className}>
+      <span className="control-label">Go alone?</span>
+      <UIButton onClick={() => props.onClick(true)}>Yes</UIButton>
+      <UIButton onClick={() => props.onClick(false)}>No</UIButton>
     </div>
   );
 }
@@ -71,13 +77,13 @@ class Bid1Controls extends Component {
     switch (this.state.stage) {
       case "CALL":
         return (
-          <div>
-            <button onClick={() => this.setState({stage: "ALONE"})}>Pick it up</button>
-            <button onClick={() => this.props.pass()}>Pass</button>
+          <div className={this.props.className}>
+            <UIButton onClick={() => this.setState({stage: "ALONE"})}>Pick it up</UIButton>
+            <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
           </div>
         );
       case "ALONE":
-        return <AloneControl onClick={(alone) => this.props.call(alone)}/>;
+        return <AloneControl className={this.props.className} onClick={(alone) => this.props.call(alone)}/>;
       default:
         return null;
     }
@@ -94,24 +100,24 @@ class Bid2Controls extends Component {
     switch (this.state.stage) {
       case "CALL":
         return (
-          <div>
-            <button onClick={() => this.setState({stage: "TRUMP"})}>Name trump</button>
-            <button onClick={() => this.props.pass()}>Pass</button>
+          <div className={this.props.className} >
+            <UIButton onClick={() => this.setState({stage: "TRUMP"})}>Name trump</UIButton>
+            <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
           </div>
         );
       case "TRUMP":
         return (
-          <div>
-            Trump:
+          <div className={this.props.className}>
+            <span className="control-label">Trump:</span>
             {
               "CDHS".split('').map((c) =>
-                <button onClick={() => this.setState({stage: "ALONE", trump: c})}>{suitToSymbol(c)}</button>
+                <UIButton onClick={() => this.setState({stage: "ALONE", trump: c})}>{suitToSymbol(c)}</UIButton>
               )
             }
           </div>
         );
       case "ALONE":
-        return <AloneControl onClick={(alone) => this.props.call(this.state.trump, alone)}/>;
+        return <AloneControl className={this.props.className} onClick={(alone) => this.props.call(this.state.trump, alone)}/>;
       default:
         return null;
     }
@@ -343,13 +349,21 @@ class App extends Component {
     if (this.myTurn()) {
       switch (this.state.phase) {
         case "bid1":
-          return <Bid1Controls
-          call={(alone) => this.bid1(true, alone)}
-          pass={() => this.bid1(false, false)} />
+          return (
+            <Bid1Controls
+              className="bid-controls"
+              call={(alone) => this.bid1(true, alone)}
+              pass={() => this.bid1(false, false)}
+            />
+          );
         case "bid2":
-          return <Bid2Controls
-          call={(trump, alone) => this.bid2(true, trump, alone)}
-          pass={() => this.bid2(false, false, null)} />
+          return (
+            <Bid2Controls
+              className="bid-controls"
+              call={(trump, alone) => this.bid2(true, trump, alone)}
+              pass={() => this.bid2(false, false, null)}
+            />
+          );
         default:
           return null;
       }
