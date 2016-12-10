@@ -399,7 +399,7 @@ class App extends Component {
     }
     const tricks = this.state.tricks;
     const playedCards = tricks.map((trick) => trick[player]).filter((x) => !!x);
-    return playedCards.length;
+    return 5 - playedCards.length;
   }
 
   render() {
