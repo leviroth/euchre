@@ -5,6 +5,7 @@ import update from 'immutability-helper';
 import './App.css';
 import autobahn from 'autobahn';
 
+
 function suitToSymbol(suit) {
   switch (suit) {
     case "C":
@@ -224,10 +225,13 @@ class App extends Component {
       turn: null,
       dealer: null,
       alone: null,
-      score: [3, 5] //FOR TESTING
+      trickScore: [0, 0],
+      score: [0, 0],
+      tricks: []
     };
 
-    const wsuri = "ws://localhost:8080/ws";
+    /* const wsuri = "ws://localhost:8080/ws";*/
+    const wsuri = `ws://${document.location.hostname}:8080/ws`
 
     // the WAMP connection to the Router
     this.connection = new autobahn.Connection({
@@ -238,7 +242,7 @@ class App extends Component {
     // fired when connection is established and session attached
     this.connection.onopen = (session, details) => {
       this.session = session;
-      console.log(" Connected");
+      console.log("Connected");
 
       session.call('realm1.create_player', ["Fred"])
         .then((res) => {
@@ -247,14 +251,16 @@ class App extends Component {
           session.call("realm1.join_table", [res, res])
             .then(console.log);
           session.subscribe(`realm1.p${this.player}.hand`,
-            (res) => this.setState({"hand": res[0]}));
+            (res) => {this.setState({"hand": res[0]}); console.log(res[0]);});
           session.subscribe('realm1.state',
             (res) => this.setState(res[0]));
-          console.log("subscribe point");
           session.subscribe('realm1.card_played',
                             ((res) => this.pushCard(res[0][0], res[0][1])));
+          session.subscribe('realm1.msg',
+                            (res) => console.log(res[0]));
           session.subscribe('realm1.newhand', (res) => this.newHand());
           session.subscribe('realm1.newtrick', (res) => this.newTrick());
+          console.log("subscribed");
         })
         .catch(console.log);
     };
@@ -316,6 +322,7 @@ class App extends Component {
       return;
     }
     const phase = this.state.phase;
+    const hand = this.state.hand;
     if (phase !== "play" && phase !== "discard") {
       return;
     }
@@ -323,7 +330,8 @@ class App extends Component {
     this.session.call(`realm1.p${this.player}.${phase}`,
                         [this.state.hand[i]])
         .then((res) => {
-          if (res) {
+          // QUESTIONABLE HACK
+          if (res && hand === this.state.hand) {
             this.removeCard(i);
           } else {
             console.log("turn error");
