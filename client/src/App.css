@@ -29,18 +29,6 @@
   }
 }
 
-
-/* .container_12 { */
-
-
-/*     background-color: #BDBCA8; */
-
-
-/*     height: 100%; */
-
-
-/* } */
-
 body {
   background-color: #E8E6CF;
 }
@@ -49,10 +37,9 @@ body {
 .cardred {
   background-color: #E8E6CF;
   display: inline-block;
-  margin: 3px;
   font-size: 2em;
-  padding: 10px 5px;
-  width: 10%;
+  padding: 10px 0px;
+  width: 12%;
   height: 100%;
   border: #000 1px solid;
   border-radius: 3px;
@@ -72,18 +59,44 @@ body {
   color: #E8E6CF;
 }
 
-.hand {
+.myhand,
+.tophand {
+  height: 15%;
   position: absolute;
   width: 100%;
 }
 
-.myhand,
-.tophand {
-  height: 15%;
+.myhand .card,
+.tophand .card {
+  margin: 3px;
 }
 
 .tophand {
   top: 5%;
+}
+
+.lefthand,
+.righthand {
+  height: 15%;
+  position: absolute;
+  top: 35%;
+  width: 12%;
+}
+
+.lefthand {
+  left: 4%;
+}
+
+.righthand {
+  right: 4%;
+}
+
+.lefthand .cardblack,
+.righthand .cardblack {
+  display: block;
+  height: 100%;
+  margin-bottom: -125%;
+  width: 100%;
 }
 
 .myhand {
@@ -140,17 +153,12 @@ body {
   width: 40%;
   margin-left: auto;
   margin-right: auto;
-  /* font-size: 2em; */
 }
 
 .control-label {
   margin: 3px;
   flex-basis: 120%;
   padding: 10px 5px;
-}
-
-.bid-controls>.button {
-  /* width: 5%; */
 }
 
 .debug-buttons {

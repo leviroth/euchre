@@ -31,7 +31,7 @@ class Card extends Component {
   render() {
     return (
       <div
-        className={`card${this.props.color}`}
+        className={`card card${this.props.color}`}
         onClick={() => this.props.onClick()}
       >
         {this.props.children}
@@ -44,7 +44,7 @@ class FaceDownHand extends Component {
   render() {
     const n = this.props.size;
     return (
-      <div className="hand tophand">
+      <div className={`hand ${this.props.player}hand`}>
         {[...Array(n)].map((x, i) =>
           <Card
             key={i}
@@ -404,6 +404,8 @@ class App extends Component {
 
   render() {
     const topPlayer = (this.player + 2) % 4;
+    const leftPlayer = (this.player + 1) % 4;
+    const rightPlayer = (this.player + 3) % 4;
     const team = this.player % 2;
     const phase = this.state.phase;
     let currentTrick;
@@ -412,7 +414,9 @@ class App extends Component {
     }
     return (
       <div className="App">
-        <FaceDownHand size={this.handSize(topPlayer)} />
+        <FaceDownHand size={this.handSize(topPlayer)} player="top" />
+        <FaceDownHand size={this.handSize(leftPlayer)} player="left" />
+        <FaceDownHand size={this.handSize(rightPlayer)} player="right" />
         {this.state.phase && this.state.phase.startsWith("bid") &&
          <div className="upcard">
            {FaceUpCard.fromStr(this.state.upcard, () => false)}
@@ -420,7 +424,7 @@ class App extends Component {
         <div>Player {this.player}</div>
         <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
         {this.renderBidControls()}
-        {phase === "play" && <Trick player={this.player} cards={currentTrick} />} 
+        {phase === "play" && <Trick player={this.player} cards={currentTrick} />}
         <Scoreboard
           dealing={this.state.dealer === this.player}
           scores={this.state.score}
