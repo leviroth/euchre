@@ -33,8 +33,8 @@ body {
   display: inline-block;
   font-size: 2em;
   padding: 10px 0px;
-  width: 12%;
-  height: 100%;
+  width: 75px;
+  height: 90px;
   border: #000 1px solid;
   border-radius: 3px;
 }
@@ -68,7 +68,7 @@ body {
 }
 
 .tophand {
-  top: 5%;
+  top: 1%;
 }
 
 .lefthand,
@@ -90,13 +90,19 @@ body {
 .lefthand .cardblack,
 .righthand .cardblack {
   display: block;
-  height: 100%;
   margin-bottom: -125%;
-  width: 100%;
 }
 
 .myhand {
   bottom: 10%;
+}
+
+.trick {
+  top: 170px;
+  left: 160px;
+  height: 300px;
+  width: 300px;
+  position: absolute;
 }
 
 .trickcard {
@@ -105,8 +111,9 @@ body {
   position: absolute;
 }
 
-.tricktop {
-  top: 25%;
+.tricktop,
+.trickbottom {
+  left: 0px;
 }
 
 .trickbottom {
@@ -114,13 +121,13 @@ body {
 }
 
 .trickleft {
-  left: -15%;
-  top: 37%;
+  left: -100px;
+  top: 75px;
 }
 
 .trickright {
-  left: 15%;
-  top: 37%;
+  left: 100px;
+  top: 75px;
 }
 
 .upcard {
@@ -182,4 +189,8 @@ body {
   font-size: 1.5em;
   color: #E8E6CF;
   background-color: #073142;
+}
+
+.playername {
+  margin: 5px;
 }

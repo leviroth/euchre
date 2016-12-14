@@ -65,13 +65,16 @@ class FaceDownHand extends Component {
     const n = this.props.size;
     return (
       <div className={`hand ${this.props.player}hand`}>
-        {[...Array(n)].map((x, i) =>
-          <Card
-            key={i}
-            color="black"
-            onClick={() => false} />
-         )
-        }
+        <div className="playername">{this.props.playerName}</div>
+        <div className="cards">
+          {[...Array(n)].map((x, i) =>
+            <Card
+              key={i}
+              color="black"
+              onClick={() => false} />
+           )
+          }
+        </div>
       </div>
     );
   }
@@ -177,11 +180,15 @@ class Hand extends Component {
   render() {
     const cardStrs = this.props.cards
     return (
-      <div className="hand myhand">{cardStrs.map((cardStr, index) => {
-          return (
-            FaceUpCard.fromStr(cardStr, () => this.props.onClick(index))
-          );
-        })}
+      <div className="hand myhand">
+        <div className="cards">
+          {cardStrs.map((cardStr, index) => {
+            return (
+              FaceUpCard.fromStr(cardStr, () => this.props.onClick(index))
+            );
+          })}
+        </div>
+        <div className="playername">{this.props.playerName}</div>
       </div>
     );
   }
@@ -191,7 +198,7 @@ class Trick extends Component {
   render() {
     const cards = this.props.cards;
     return (
-      <div >
+      <div className="trick" >
         {[...Array(4)].map((_, position) =>
           (cards[position] &&
            <div className={`trick${resolvePlayerPosition(position)} trickcard`}>
@@ -268,15 +275,18 @@ class Table extends Component {
            <FaceDownHand
              size={this.handSize(position)}
              player={resolvePlayerPosition(relative + 1)}
-             playerName={this.props.playernames[position]}
+             playerName={this.props.playerNames[position]}
            />
          )}
         {this.props.phase && this.props.phase.startsWith("bid") &&
          <div className="upcard">
            {FaceUpCard.fromStr(this.props.upcard, () => false)}
          </div>}
-        <div>Player {this.player}</div>
-        <Hand cards={this.props.hand} onClick={(i) => this.props.handleCardClick(i)} />
+        <Hand
+          playerName={this.props.playerNames[this.props.player]}
+          cards={this.props.hand}
+          onClick={(i) => this.props.handleCardClick(i)}
+        />
         {this.renderBidControls()}
         {phase === "play" && <Trick player={this.props.player} cards={currentTrick} />}
       </div>
@@ -297,7 +307,7 @@ class App extends Component {
       trickScore: [0, 0],
       score: [0, 0],
       tricks: [],
-      playernames: [...Array(4)]
+      playerNames: [...Array(4)]
     };
 
     /* const wsuri = "ws://localhost:8080/ws";*/
@@ -435,7 +445,8 @@ class App extends Component {
       upcard: "J.D",
       tricks: [["K.C", "J.H", "J.C", "10.S"]],
       turn: 1,
-      phase: "play"
+      phase: "play",
+      playerNames: ["John", "Paul", "George", "Ringo"]
     });
   }
 
@@ -454,7 +465,7 @@ class App extends Component {
           score={this.state.score}
           tricks={this.state.tricks}
           player={this.player}
-          playernames={this.state.playernames}
+          playerNames={this.state.playerNames}
           bid1={(...args) => this.bid1(...args)}
           bid2={(...args) => this.bid2(...args)}
           handleCardClick={(i) => this.handleCardClick(i)}
