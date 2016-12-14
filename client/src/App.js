@@ -21,6 +21,26 @@ function suitToSymbol(suit) {
   }
 }
 
+function resolvePlayerPosition(position, player) {
+  switch (position) {
+    case 1:
+      return "left";
+    case 2:
+      return "top";
+    case 3:
+      return "right";
+    default:
+      return "bottom";
+  }
+}
+
+function* positionGenerator(start, count=4) {
+  start %= 4;
+  let i = 0;
+  while (i < count)
+    yield (start + i++) % 4;
+}
+
 function UIButton(props) {
   return (
     <div className="button" onClick={() => props.onClick()}>{props.children}</div>
@@ -169,33 +189,15 @@ class Hand extends Component {
 
 class Trick extends Component {
   render() {
-    const bottom = this.props.player;
-    const left = (this.props.player + 1) % 4;
-    const top = (this.props.player + 2) % 4;
-    const right = (this.props.player + 3) % 4;
     const cards = this.props.cards;
     return (
       <div >
-      {cards[top] &&
-       <div className="tricktop trickcard">
-         {FaceUpCard.fromStr(cards[top], () => false) }
-       </div>
-      }
-      {cards[bottom] &&
-       <div className="trickbot trickcard">
-         {FaceUpCard.fromStr(cards[bottom], () => false) }
-       </div>
-      }
-      {cards[left] &&
-       <div className="trickleft trickcard">
-         {FaceUpCard.fromStr(cards[left], () => false) }
-       </div>
-      }
-      {cards[right] &&
-       <div className="trickright trickcard">
-         {FaceUpCard.fromStr(cards[right], () => false) }
-       </div>
-      }
+        {[...Array(4)].map((_, position) =>
+          (cards[position] &&
+           <div className={`trick${resolvePlayerPosition(position)} trickcard`}>
+            {FaceUpCard.fromStr(cards[position], () => false)}
+           </div>
+          ))}
       </div>
     );
   }
@@ -205,7 +207,7 @@ function Scoreboard(props) {
   const yourTeam = props.team;
   const otherTeam = 1 - yourTeam;
   return (
-    <div style={{textAlign: "left"}}>
+    <div className="scoreboard" style={{textAlign: "left"}}>
       {(props.dealing) ? <div>You are the dealer</div> : null}
       {(props.turn) ? <div>It's your turn</div> : null}
       {(props.trump !== undefined) ? <div>Trump: {props.trump}</div> : null}
@@ -213,6 +215,73 @@ function Scoreboard(props) {
       <div>Score: {props.scores[yourTeam]}–{props.scores[otherTeam]}</div>
     </div>
   );
+}
+
+class Table extends Component {
+  myTurn() {
+    return this.props.turn === this.props.player;
+  }
+
+  renderBidControls() {
+    if (this.myTurn()) {
+      switch (this.props.phase) {
+        case "bid1":
+          return (
+            <Bid1Controls
+              className="bid-controls"
+              call={(alone) => this.props.bid1(true, alone)}
+              pass={() => this.props.bid1(false, false)}
+            />
+          );
+        case "bid2":
+          return (
+            <Bid2Controls
+              className="bid-controls"
+              call={(trump, alone) => this.props.bid2(true, trump, alone)}
+              pass={() => this.props.bid2(false, false, null)}
+            />
+          );
+        default:
+          return null;
+      }
+    }
+  }
+
+  handSize(player) {
+    if (this.props.alone === player) {
+      return 0;
+    }
+    const tricks = this.props.tricks;
+    const playedCards = tricks.map((trick) => trick[player]).filter((x) => !!x);
+    return 5 - playedCards.length;
+  }
+
+  render() {
+    const phase = this.props.phase;
+    let currentTrick;
+    if (phase === "play") {
+      currentTrick = this.props.tricks[this.props.tricks.length - 1];
+    }
+    return (
+      <div className="grid_8" id="table">
+        {[...positionGenerator(this.props.player + 1, 3)].map((position, relative) =>
+           <FaceDownHand
+             size={this.handSize(position)}
+             player={resolvePlayerPosition(relative + 1)}
+             playerName={this.props.playernames[position]}
+           />
+         )}
+        {this.props.phase && this.props.phase.startsWith("bid") &&
+         <div className="upcard">
+           {FaceUpCard.fromStr(this.props.upcard, () => false)}
+         </div>}
+        <div>Player {this.player}</div>
+        <Hand cards={this.props.hand} onClick={(i) => this.props.handleCardClick(i)} />
+        {this.renderBidControls()}
+        {phase === "play" && <Trick player={this.props.player} cards={currentTrick} />}
+      </div>
+    );
+  }
 }
 
 class App extends Component {
@@ -227,7 +296,8 @@ class App extends Component {
       alone: null,
       trickScore: [0, 0],
       score: [0, 0],
-      tricks: []
+      tricks: [],
+      playernames: [...Array(4)]
     };
 
     /* const wsuri = "ws://localhost:8080/ws";*/
@@ -317,6 +387,10 @@ class App extends Component {
     );
   }
 
+  myTurn() {
+    return this.state.turn === this.player;
+  }
+
   handleCardClick(i) {
     if (!this.myTurn()) {
       return;
@@ -349,35 +423,6 @@ class App extends Component {
                       [call, alone, suit]);
   }
 
-  myTurn() {
-    return this.state.turn === this.player;
-  }
-
-  renderBidControls() {
-    if (this.myTurn()) {
-      switch (this.state.phase) {
-        case "bid1":
-          return (
-            <Bid1Controls
-              className="bid-controls"
-              call={(alone) => this.bid1(true, alone)}
-              pass={() => this.bid1(false, false)}
-            />
-          );
-        case "bid2":
-          return (
-            <Bid2Controls
-              className="bid-controls"
-              call={(trump, alone) => this.bid2(true, trump, alone)}
-              pass={() => this.bid2(false, false, null)}
-            />
-          );
-        default:
-          return null;
-      }
-    }
-  }
-
   debugHand() {
     this.player = 1;
     this.setState({
@@ -388,51 +433,45 @@ class App extends Component {
              "A.C"
       ],
       upcard: "J.D",
+      tricks: [["K.C", "J.H", "J.C", "10.S"]],
       turn: 1,
-      phase: "bid2"
+      phase: "play"
     });
   }
 
-  handSize(player) {
-    if (this.state.alone === player) {
-      return 0;
-    }
-    const tricks = this.state.tricks;
-    const playedCards = tricks.map((trick) => trick[player]).filter((x) => !!x);
-    return 5 - playedCards.length;
-  }
-
   render() {
-    const topPlayer = (this.player + 2) % 4;
-    const leftPlayer = (this.player + 1) % 4;
-    const rightPlayer = (this.player + 3) % 4;
     const team = this.player % 2;
-    const phase = this.state.phase;
-    let currentTrick;
-    if (phase === "play") {
-      currentTrick = this.state.tricks[this.state.tricks.length - 1];
-    }
     return (
-      <div className="App">
-        <FaceDownHand size={this.handSize(topPlayer)} player="top" />
-        <FaceDownHand size={this.handSize(leftPlayer)} player="left" />
-        <FaceDownHand size={this.handSize(rightPlayer)} player="right" />
-        {this.state.phase && this.state.phase.startsWith("bid") &&
-         <div className="upcard">
-           {FaceUpCard.fromStr(this.state.upcard, () => false)}
-         </div>}
-        <div>Player {this.player}</div>
-        <Hand cards={this.state.hand} onClick={(i) => this.handleCardClick(i)} />
-        {this.renderBidControls()}
-        {phase === "play" && <Trick player={this.player} cards={currentTrick} />}
-        <Scoreboard
-          dealing={this.state.dealer === this.player}
-          scores={this.state.score}
-          team={team}
-          tricks={this.state.trickScore}
-          trump={this.state.trump}
-          turn={this.myTurn()}
+      <div className="container_12 App">
+        <Table
+          hand={this.state.hand}
+          upcard={this.state.upcard}
+          phase={this.state.phase}
+          turn={this.state.turn}
+          dealer={this.state.dealer}
+          alone={this.state.alone}
+          trickScore={this.state.trickScore}
+          score={this.state.score}
+          tricks={this.state.tricks}
+          player={this.player}
+          playernames={this.state.playernames}
+          bid1={(...args) => this.bid1(...args)}
+          bid2={(...args) => this.bid2(...args)}
+          handleCardClick={(i) => this.handleCardClick(i)}
         />
+        <div className="grid_4 sidebar" >
+          <div>These are some rows</div>
+          <div>They contain text.</div>
+          <div>Could be where we put chat and game messages until we get very wide</div>
+          <Scoreboard
+            dealing={this.state.dealer === this.player}
+            scores={this.state.score}
+            team={team}
+            tricks={this.state.trickScore}
+            trump={this.state.trump}
+            turn={this.myTurn()}
+          />
+        </div>
         <div className="debug-buttons" >
           <UIButton onClick={() => this.run()} >run</UIButton>
           <UIButton onClick={() => this.debugHand()}>debug</UIButton>
