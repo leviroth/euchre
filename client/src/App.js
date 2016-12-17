@@ -23,22 +23,15 @@ function suitToSymbol(suit) {
 
 function resolvePlayerPosition(position, player) {
   switch (position) {
-    case 1:
+    case (player + 1) % 4:
       return "left";
-    case 2:
+    case (player + 2) % 4:
       return "top";
-    case 3:
+    case (player + 3) % 4:
       return "right";
     default:
       return "bottom";
   }
-}
-
-function* positionGenerator(start, count=4) {
-  start %= 4;
-  let i = 0;
-  while (i < count)
-    yield (start + i++) % 4;
 }
 
 function UIButton(props) {
@@ -197,11 +190,12 @@ class Hand extends Component {
 class Trick extends Component {
   render() {
     const cards = this.props.cards;
+    const player = this.props.player;
     return (
       <div className="trick" >
         {[...Array(4)].map((_, position) =>
           (cards[position] &&
-           <div className={`trick${resolvePlayerPosition(position)} trickcard`}>
+           <div className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
             {FaceUpCard.fromStr(cards[position], () => false)}
            </div>
           ))}
@@ -265,16 +259,20 @@ class Table extends Component {
 
   render() {
     const phase = this.props.phase;
+    const player = this.props.player;
+
     let currentTrick;
     if (phase === "play") {
       currentTrick = this.props.tricks[this.props.tricks.length - 1];
     }
+
     return (
       <div className="grid_8" id="table">
-        {[...positionGenerator(this.props.player + 1, 3)].map((position, relative) =>
+        {(player !== undefined) &&
+         [0, 1, 2, 3].filter((x) => x !== player).map((position) =>
            <FaceDownHand
              size={this.handSize(position)}
-             player={resolvePlayerPosition(relative + 1)}
+             player={resolvePlayerPosition(position, player)}
              playerName={this.props.playerNames[position]}
            />
          )}
