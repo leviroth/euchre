@@ -331,7 +331,7 @@ class App extends Component {
           session.call("realm1.join_table", [res, res])
             .then(console.log);
           session.subscribe(`realm1.p${this.player}.hand`,
-            (res) => {this.setState({"hand": res[0]}); console.log(res[0]);});
+            (res) => {this.setState({"hand": res[0]}); console.log(res);});
           session.subscribe('realm1.state',
             (res) => this.setState(res[0]));
           session.subscribe('realm1.card_played',
