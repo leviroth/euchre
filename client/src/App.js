@@ -193,10 +193,10 @@ class Trick extends Component {
     const player = this.props.player;
     return (
       <div className="trick" >
-        {[...Array(4)].map((_, position) =>
-          (cards[position] &&
-           <div className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
-            {FaceUpCard.fromStr(cards[position], () => false)}
+        {cards.map((card, position) =>
+          (card &&
+           <div key={card} className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
+            {FaceUpCard.fromStr(card, () => false)}
            </div>
           ))}
       </div>
@@ -274,6 +274,7 @@ class Table extends Component {
              size={this.handSize(position)}
              player={resolvePlayerPosition(position, player)}
              playerName={this.props.playerNames[position]}
+             key={position}
            />
          )}
         {this.props.phase && this.props.phase.startsWith("bid") &&
