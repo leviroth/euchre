@@ -34,6 +34,33 @@ function resolvePlayerPosition(position, player) {
   }
 }
 
+function ChatDisplay(props) {
+  return (
+    <div>
+      {props.messages.map((message) =>
+        <div key={message.when}>
+          <em>{message.sender}:</em> {message.text}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ChatInput(props) {
+  return (<textarea style={{position: 'absolute', bottom: '200px'}}/>);
+}
+
+class ChatBox extends Component {
+  render() {
+    return (
+      <div className="chatbox" >
+        <ChatDisplay messages={this.props.messages} />
+        <ChatInput />
+      </div>
+    )
+  }
+}
+
 function UIButton(props) {
   return (
     <div className="button" onClick={() => props.onClick()}>{props.children}</div>
@@ -306,7 +333,8 @@ class App extends Component {
       trickScore: [0, 0],
       score: [0, 0],
       tricks: [],
-      playerNames: [...Array(4)]
+      playerNames: [...Array(4)],
+      messages: []
     };
   }
 
@@ -338,6 +366,15 @@ class App extends Component {
     console.log("subscribed");
   }
 
+  addMessage(message) {
+    message.when = Date.now();
+    this.setState((prevState) => ({messages: prevState.messages.concat(message)}));
+  }
+
+  sendMessage(message) {
+    this.session.publish('realm1.chat', [{text: message, sender: this.state.playerNames[this.player]}]);
+  }
+
   componentDidMount() {
     /* const wsuri = "ws://localhost:8080/ws";*/
     const wsuri = `ws://${document.location.hostname}:8080/ws`
@@ -353,6 +390,7 @@ class App extends Component {
       this.session = session;
       console.log("Connected");
       this.createPlayer(session, "Fred").then(() => this.joinTable(session, this.player));
+      session.subscribe('realm1.chat', (res) => this.addMessage(res[0]));
     };
 
     // fired when connection was lost (or could not be established)
@@ -457,7 +495,10 @@ class App extends Component {
       tricks: [["K.C", "J.H", "J.C", "10.S"]],
       turn: 1,
       phase: "play",
-      playerNames: ["John", "Paul", "George", "Ringo"]
+      playerNames: ["John", "Paul", "George", "Ringo"],
+      messages: [{when: 1, sender: "John", text: "foo"},
+                 {when: 3, sender: "George", text: "bar"},
+                 {when: 4, sender: "Ringo", text: "baz"}]
     });
   }
 
@@ -482,9 +523,7 @@ class App extends Component {
           handleCardClick={(i) => this.handleCardClick(i)}
         />
         <div className="grid_4 sidebar" >
-          <div>These are some rows</div>
-          <div>They contain text.</div>
-          <div>Could be where we put chat and game messages until we get very wide</div>
+          <ChatBox messages={this.state.messages} />
           <Scoreboard
             dealing={this.state.dealer === this.position}
             scores={this.state.score}
