@@ -13,8 +13,8 @@ class MyComponent(ApplicationSession):
         self.hand = None
 
         def deal():
-            for player_id, player in self.players.items():
-                self.publish('realm1.p{}.hand'.format(player_id),
+            for player in self.players.values():
+                self.publish('realm1.p{}.hand'.format(player.position),
                              [str(card) for card in player.hand])
             self.publish('realm1.newhand')
 
@@ -39,26 +39,23 @@ class MyComponent(ApplicationSession):
 
         async def run():
             print("running")
-            for player_id, player in self.players.items():
-                await self.register(
-                    functools.partial(bid1, player),
-                    'realm1.p{}.bid1'.format(player_id))
-                await self.register(
-                    functools.partial(bid2, player),
-                    'realm1.p{}.bid2'.format(player_id))
-                await self.register(
-                    functools.partial(discard, player),
-                    'realm1.p{}.discard'.format(player_id))
-                await self.register(
-                    functools.partial(play_card, player),
-                    'realm1.p{}.play'.format(player_id))
             self.t.run()
             deal()
             publish_state()
 
-        def join_table(player, position):
-            self.players[player].joinTable(self.t, position)
-            print("player {} joined".format(player))
+        async def join_table(player_num, position):
+            player = self.players[player_num]
+            player.joinTable(self.t, position)
+            await self.register(functools.partial(bid1, player),
+                                'realm1.p{}.bid1'.format(player.position))
+            await self.register(functools.partial(bid2, player),
+                                'realm1.p{}.bid2'.format(player.position))
+            await self.register(functools.partial(discard, player),
+                                'realm1.p{}.discard'.format(player.position))
+            await self.register(functools.partial(play_card, player),
+                                'realm1.p{}.play'.format(player.position))
+            print("player {} ({}) joined at position {}"
+                  .format(player_num, player.name, position))
 
         def publish_state():
             loner = None

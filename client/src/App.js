@@ -309,7 +309,37 @@ class App extends Component {
       tricks: [],
       playerNames: [...Array(4)]
     };
+  }
 
+  createPlayer(session, playerName) {
+    const p = session.call('realm1.create_player', [playerName]);
+    p.then((res) => {
+      console.log(`Player ID: ${res}`);
+      this.player = res;
+      this.setState((prevState) =>
+        update(prevState, {playerNames: {[res]: {$set: playerName}}}));
+    }).catch(console.log);
+    return p;
+  }
+
+  joinTable(session, position) {
+    session.call("realm1.join_table", [this.player, position])
+           .then(console.log);
+    this.position = position;
+    session.subscribe(`realm1.p${this.position}.hand`,
+                      (res) => {this.setState({"hand": res[0]}); console.log(res);});
+    session.subscribe('realm1.state',
+                      (res) => this.setState(res[0]));
+    session.subscribe('realm1.card_played',
+                      ((res) => this.pushCard(res[0][0], res[0][1])));
+    session.subscribe('realm1.msg',
+                      (res) => console.log(res[0]));
+    session.subscribe('realm1.newhand', (res) => this.newHand());
+    session.subscribe('realm1.newtrick', (res) => this.newTrick());
+    console.log("subscribed");
+  }
+
+  componentDidMount() {
     /* const wsuri = "ws://localhost:8080/ws";*/
     const wsuri = `ws://${document.location.hostname}:8080/ws`
 
@@ -323,26 +353,7 @@ class App extends Component {
     this.connection.onopen = (session, details) => {
       this.session = session;
       console.log("Connected");
-
-      session.call('realm1.create_player', ["Fred"])
-        .then((res) => {
-          console.log(`Player ID: ${res}`);
-          this.player = res;
-          session.call("realm1.join_table", [res, res])
-            .then(console.log);
-          session.subscribe(`realm1.p${this.player}.hand`,
-            (res) => {this.setState({"hand": res[0]}); console.log(res);});
-          session.subscribe('realm1.state',
-            (res) => this.setState(res[0]));
-          session.subscribe('realm1.card_played',
-                            ((res) => this.pushCard(res[0][0], res[0][1])));
-          session.subscribe('realm1.msg',
-                            (res) => console.log(res[0]));
-          session.subscribe('realm1.newhand', (res) => this.newHand());
-          session.subscribe('realm1.newtrick', (res) => this.newTrick());
-          console.log("subscribed");
-        })
-        .catch(console.log);
+      this.createPlayer(session, "Fred").then(() => this.joinTable(session, this.player));
     };
 
     // fired when connection was lost (or could not be established)
@@ -398,7 +409,7 @@ class App extends Component {
   }
 
   myTurn() {
-    return this.state.turn === this.player;
+    return this.state.turn === this.position;
   }
 
   handleCardClick(i) {
@@ -411,7 +422,7 @@ class App extends Component {
       return;
     }
 
-    this.session.call(`realm1.p${this.player}.${phase}`,
+    this.session.call(`realm1.p${this.position}.${phase}`,
                         [this.state.hand[i]])
         .then((res) => {
           // QUESTIONABLE HACK
@@ -424,17 +435,18 @@ class App extends Component {
   }
 
   bid1(call, alone) {
-    this.session.call(`realm1.p${this.player}.bid1`,
+    this.session.call(`realm1.p${this.position}.bid1`,
                       [call, alone]);
   }
 
   bid2(call, alone, suit) {
-    this.session.call(`realm1.p${this.player}.bid2`,
+    this.session.call(`realm1.p${this.position}.bid2`,
                       [call, alone, suit]);
   }
 
   debugHand() {
     this.player = 1;
+    this.position = 1;
     this.setState({
       hand: ["K.H",
              "Q.D",
@@ -451,7 +463,7 @@ class App extends Component {
   }
 
   render() {
-    const team = this.player % 2;
+    const team = this.position % 2;
     return (
       <div className="container_12 App">
         <Table
@@ -464,7 +476,7 @@ class App extends Component {
           trickScore={this.state.trickScore}
           score={this.state.score}
           tricks={this.state.tricks}
-          player={this.player}
+          player={this.position}
           playerNames={this.state.playerNames}
           bid1={(...args) => this.bid1(...args)}
           bid2={(...args) => this.bid2(...args)}
@@ -475,7 +487,7 @@ class App extends Component {
           <div>They contain text.</div>
           <div>Could be where we put chat and game messages until we get very wide</div>
           <Scoreboard
-            dealing={this.state.dealer === this.player}
+            dealing={this.state.dealer === this.position}
             scores={this.state.score}
             team={team}
             tricks={this.state.trickScore}
