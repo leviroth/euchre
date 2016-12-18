@@ -37,6 +37,13 @@ class MyComponent(ApplicationSession):
             self.player_count += 1
             return self.player_count - 1
 
+        def set_name(player_id, name):
+            self.players[player_id].setName(name)
+            print([p.name for p in self.players.values()])
+
+        def set_position(player_id, position):
+            self.players[player_id].set_position(position)
+
         async def run():
             print("running")
             self.t.run()
@@ -121,6 +128,8 @@ class MyComponent(ApplicationSession):
                 return True
 
         await self.register(create_player, 'realm1.create_player')
+        await self.register(set_name, 'realm1.set_name')
+        await self.register(set_position, 'realm1.set_position')
         await self.register(join_table, 'realm1.join_table')
         await self.register(run, 'realm1.run')
 

@@ -135,6 +135,10 @@ class Player():
     def leaveTable(self):
         self.table.removePlayer(self.position)
 
+    def set_position(self, position):
+        self.leaveTable()
+        self.joinTable(self.table, position)
+
     @requireTurn(phases.Bid1Phase)
     def bid1(self, call, alone=False):
         if call:
@@ -192,7 +196,7 @@ class Table():
         self.players[position] = player
 
     def removePlayer(self, position):
-        self.pop(position)
+        self.players.pop(position)
 
     def hasPriority(self, *args, **kwargs):
         try:

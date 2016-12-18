@@ -46,8 +46,55 @@ function ChatDisplay(props) {
   );
 }
 
-function ChatInput(props) {
-  return (<textarea style={{position: 'absolute', bottom: '200px'}}/>);
+class ChatInput extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {value: 'Some default text'};
+  }
+
+  handleChange(event) {
+    this.setState({value: event.target.value});
+  }
+
+  handleKeyPress(event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      if (this.handleMessage(this.state.value)) {
+        this.setState({value: ''});
+      }
+      event.preventDefault();
+    }
+  }
+
+  handleMessage(message) {
+    if (message.startsWith('/')) {
+      const [command, ...params] = message.split(' ');
+      switch (command) {
+        case "/setname":
+          this.props.setName(params[0]);
+          return true;
+        case "/setposition":
+          this.props.setPosition(params[0]);
+          return true;
+        case "/say":
+          this.props.sendMessage(params.join(' '));
+          return true;
+        default:
+          this.props.error("Unrecognized command. To start a message with '/', use '/say [message]'.")
+          return false;
+      }
+    } else {
+      this.props.sendMessage(message);
+    }
+  }
+
+  render() {
+    return (
+      <textarea style={{position: 'absolute', bottom: '200px'}}
+        value={this.state.value} onChange={(e) => this.handleChange(e)}
+        onKeyDown={(e) => this.handleKeyPress(e)}
+      />
+    );
+  }
 }
 
 class ChatBox extends Component {
@@ -55,7 +102,12 @@ class ChatBox extends Component {
     return (
       <div className="chatbox" >
         <ChatDisplay messages={this.props.messages} />
-        <ChatInput />
+        <ChatInput
+          setName={(name) => this.props.setName(name)}
+          setPosition={(pos) => this.props.setPosition(pos)}
+          sendMessage={(msg) => this.props.sendMessage(msg)}
+          error={console.log}
+        />
       </div>
     )
   }
@@ -338,8 +390,8 @@ class App extends Component {
     };
   }
 
-  createPlayer(session, playerName) {
-    const p = session.call('realm1.create_player', [playerName]);
+  createPlayer(playerName) {
+    const p = this.session.call('realm1.create_player', ['anon']);
     p.then((res) => {
       console.log(`Player ID: ${res}`);
       this.player = res;
@@ -349,20 +401,28 @@ class App extends Component {
     return p;
   }
 
-  joinTable(session, position) {
-    session.call("realm1.join_table", [this.player, position])
-           .then(console.log);
+  setName(name) {
+    this.session.call('realm1.set_name', [this.player, name]);
+  }
+
+  setPosition(pos) {
+    this.session.call('realm1.set_position', [this.player, pos]);
+  }
+
+  joinTable(position) {
+    this.session.call("realm1.join_table", [this.player, position])
+        .then(console.log);
     this.position = position;
-    session.subscribe(`realm1.p${this.position}.hand`,
-                      (res) => {this.setState({"hand": res[0]}); console.log(res);});
-    session.subscribe('realm1.state',
-                      (res) => this.setState(res[0]));
-    session.subscribe('realm1.card_played',
-                      ((res) => this.pushCard(res[0][0], res[0][1])));
-    session.subscribe('realm1.msg',
-                      (res) => console.log(res[0]));
-    session.subscribe('realm1.newhand', (res) => this.newHand());
-    session.subscribe('realm1.newtrick', (res) => this.newTrick());
+    this.session.subscribe(`realm1.p${this.position}.hand`,
+                           (res) => {this.setState({"hand": res[0]}); console.log(res);});
+    this.session.subscribe('realm1.state',
+                           (res) => this.setState(res[0]));
+    this.session.subscribe('realm1.card_played',
+                           ((res) => this.pushCard(res[0][0], res[0][1])));
+    this.session.subscribe('realm1.msg',
+                           (res) => console.log(res[0]));
+    this.session.subscribe('realm1.newhand', (res) => this.newHand());
+    this.session.subscribe('realm1.newtrick', (res) => this.newTrick());
     console.log("subscribed");
   }
 
@@ -389,7 +449,7 @@ class App extends Component {
     this.connection.onopen = (session, details) => {
       this.session = session;
       console.log("Connected");
-      this.createPlayer(session, "Fred").then(() => this.joinTable(session, this.player));
+      this.createPlayer("Fred").then(() => this.joinTable(this.player));
       session.subscribe('realm1.chat', (res) => this.addMessage(res[0]));
     };
 
@@ -523,7 +583,12 @@ class App extends Component {
           handleCardClick={(i) => this.handleCardClick(i)}
         />
         <div className="grid_4 sidebar" >
-          <ChatBox messages={this.state.messages} />
+          <ChatBox
+            sendMessage={(msg) => this.sendMessage(msg)}
+            setPosition={(pos) => this.setPosition(pos)}
+            setName={(name) => this.setName(name)}
+            messages={this.state.messages}
+          />
           <Scoreboard
             dealing={this.state.dealer === this.position}
             scores={this.state.score}
