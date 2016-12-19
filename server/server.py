@@ -39,7 +39,7 @@ class MyComponent(ApplicationSession):
 
         def set_name(player_id, name):
             self.players[player_id].setName(name)
-            print([p.name for p in self.players.values()])
+            self.publish('realm1.player_names', [player_id, name])
 
         def set_position(player_id, position):
             self.players[player_id].set_position(position)

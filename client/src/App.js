@@ -49,7 +49,7 @@ function ChatDisplay(props) {
 class ChatInput extends Component {
   constructor(props) {
     super(props);
-    this.state = {value: 'Some default text'};
+    this.state = {value: ''};
   }
 
   handleChange(event) {
@@ -70,9 +70,11 @@ class ChatInput extends Component {
       const [command, ...params] = message.split(' ');
       switch (command) {
         case "/setname":
+        case "/name":
           this.props.setName(params[0]);
           return true;
         case "/setposition":
+        case "/position":
           this.props.setPosition(params[0]);
           return true;
         case "/say":
@@ -84,12 +86,13 @@ class ChatInput extends Component {
       }
     } else {
       this.props.sendMessage(message);
+      return true;
     }
   }
 
   render() {
     return (
-      <textarea style={{position: 'absolute', bottom: '200px'}}
+      <textarea style={{width: "100%", position: 'absolute', bottom: '200px'}}
         value={this.state.value} onChange={(e) => this.handleChange(e)}
         onKeyDown={(e) => this.handleKeyPress(e)}
       />
@@ -385,7 +388,7 @@ class App extends Component {
       trickScore: [0, 0],
       score: [0, 0],
       tricks: [],
-      playerNames: [...Array(4)],
+      playerNames: Object(),
       messages: []
     };
   }
@@ -432,7 +435,10 @@ class App extends Component {
   }
 
   sendMessage(message) {
-    this.session.publish('realm1.chat', [{text: message, sender: this.state.playerNames[this.player]}]);
+    const myName = this.state.playerNames[this.player];
+    const messageObj = {text: message, sender: myName};
+    this.session.publish('realm1.chat', [messageObj]);
+    this.addMessage(messageObj);
   }
 
   componentDidMount() {
@@ -451,6 +457,9 @@ class App extends Component {
       console.log("Connected");
       this.createPlayer("Fred").then(() => this.joinTable(this.player));
       session.subscribe('realm1.chat', (res) => this.addMessage(res[0]));
+      session.subscribe('realm1.player_names', (res) => this.setState((prevState) =>
+        update(prevState, {playerNames: {$merge: {[res[0][0]]: res[0][1]}}})
+      ));
     };
 
     // fired when connection was lost (or could not be established)
