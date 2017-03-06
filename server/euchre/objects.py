@@ -49,19 +49,6 @@ class Rank(Enum):
     ace = "A"
 
 
-class Deck():
-    cards = [Card(rank, suit) for suit in Suit for rank in Rank]
-
-    def __init__(self):
-        self.remaining = self.cards.copy()
-
-    def draw(self):
-        return self.remaining.pop()
-
-    def shuffle(self):
-        shuffle(self.remaining)
-
-
 class Card():
     def __init__(self, rank, suit):
         self.suit = suit
@@ -97,6 +84,19 @@ class Card():
                 }
 
         return cls(rank[r], suit[s])
+
+
+class Deck():
+    cards = [Card(rank, suit) for suit in Suit for rank in Rank]
+
+    def __init__(self):
+        self.remaining = self.cards.copy()
+
+    def draw(self):
+        return self.remaining.pop()
+
+    def shuffle(self):
+        shuffle(self.remaining)
 
 
 class Player():
