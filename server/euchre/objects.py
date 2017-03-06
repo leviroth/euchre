@@ -50,20 +50,16 @@ class Rank(Enum):
 
 
 class Deck():
+    cards = [Card(rank, suit) for suit in Suit for rank in Rank]
+
     def __init__(self):
-        self.cards = {Card(rank, suit) for suit in Suit
-                      for rank in Rank}
-        self.reset()
+        self.remaining = self.cards.copy()
 
     def draw(self):
         return self.remaining.pop()
 
     def shuffle(self):
         shuffle(self.remaining)
-
-    def reset(self):
-        self.remaining = list(self.cards)
-        self.shuffle()
 
 
 class Card():
