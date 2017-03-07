@@ -37,3 +37,4 @@ only way out is to restart the game for everyone. Reader beware.
 Currently, work is underway to improve this situation. That starts with
 rewriting the server to decouple the game state, and its (too "thick")
 representation of a player, from the objects used to handle user interactions.
+You can check out this work on the `backend-rewrite` branch.
