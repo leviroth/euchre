@@ -1,4 +1,4 @@
-from euchre.objects import Suit, Rank, Card
+from euchre.objects import Suit
 
 
 def cardKey(x):
