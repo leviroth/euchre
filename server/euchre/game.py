@@ -222,8 +222,8 @@ class PlayCardsPhase(TrumpMadePhase):
         return max_size == len(self.trick)
 
     def trick_winner(self):
-        max(range(4),
-            key=lambda x: self.relative_rank(self.trick.cards.get(x)))
+        return max(range(4),
+                   key=lambda x: self.relative_rank(self.trick.cards.get(x)))
 
     def score_trick(self):
         winning_player = self.trick_winner()
