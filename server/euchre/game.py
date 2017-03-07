@@ -36,6 +36,9 @@ class LiveGamePhase:
         """The partner of the player whose turn it is."""
         return (self.turn + 2) % 4
 
+    def card_in_hand(self, card):
+        return card in self.current_hand
+
     @property
     def current_hand(self):
         """The hand of the player whose turn it is."""
@@ -123,9 +126,6 @@ class TrumpMadePhase(LiveGamePhase):
         self.maker = maker
         self.sitting = sitting
         self.trump = trump
-
-    def card_in_hand(self, card):
-        return card in self.current_hand
 
 
 class DiscardPhase(TrumpMadePhase):
