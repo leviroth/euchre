@@ -179,10 +179,9 @@ class PlayCardsPhase(TrumpMadePhase):
     @property
     def relative_left(self):
         """Return the player to the left, accounting for going-alone."""
-        actual_left = self.left
-        if self.sitting == actual_left:
-            return self.left_of(actual_left)
-        return actual_left
+        if self.sitting == self.left:
+            return self.left_of(self.turn, 2)
+        return self.left
 
     def next_hand_or_victory(self):
         """Proceed to next hand, or end game if someone has won."""
