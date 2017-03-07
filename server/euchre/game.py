@@ -24,6 +24,7 @@ class GameOver(Phase):
 
 
 class LiveGamePhase:
+    """Base class for all phases until game ends."""
     def __init__(self, score, hands, dealer, turn):
         self.score = score
         self.hands = hands
@@ -32,31 +33,38 @@ class LiveGamePhase:
 
     @property
     def across(self):
+        """The partner of the player whose turn it is."""
         return (self.turn + 2) % 4
 
     @property
     def current_hand(self):
+        """The hand of the player whose turn it is."""
         return self.hands[self.turn]
 
     @property
     def left(self):
+        """The player to the left of the player whose turn it is."""
         return (self.turn + 1) % 4
 
     def left_of(self, player, spots=1):
+        """Advance the given number of spots from the given player."""
         return (player + spots) % 4
 
 
 class BidPhase(LiveGamePhase):
+    """Base class for bidding phases."""
     def __init__(self, score, hands, dealer, turn, up_card):
         super().__init__(score, hands, dealer, turn)
         self.up_card = up_card
 
 
 class BidPhaseOne(BidPhase):
+    """First bid phase, before the upcard is turned down."""
     def __str__(self):
         return "bid1"
 
     def call(self, alone):
+        """Order the dealer to pick up the upcard."""
         self.hands[self.dealer].append(self.up_card)
         if alone:
             if self.across == self.dealer:
@@ -72,6 +80,7 @@ class BidPhaseOne(BidPhase):
                                 None, self.up_card.suit)
 
     def pass_bid(self):
+        """Pass the bid to the next player."""
         if self.turn == self.dealer:
             return BidPhaseTwo(self.score, self.hands, self.dealer, self.left,
                                self.up_card)
@@ -85,6 +94,7 @@ class BidPhaseTwo(BidPhase):
         return "bid2"
 
     def call(self, alone, trump):
+        """Name trump."""
         if trump == self.up_card.suit:
             raise IllegalMoveException()
         if alone:
@@ -98,6 +108,7 @@ class BidPhaseTwo(BidPhase):
                                   trump, Trick(next_turn), [0, 0])
 
     def pass_bid(self):
+        """Pass the bid to the next player."""
         if self.turn == self.dealer:
             raise IllegalMoveException()
         else:
@@ -106,7 +117,7 @@ class BidPhaseTwo(BidPhase):
 
 
 class TrumpMadePhase(LiveGamePhase):
-    """Phase once trump is made."""
+    """Base class for phases that have a trump suit made."""
     def __init__(self, score, hands, dealer, turn, maker, sitting, trump):
         super().__init__(score, hands, dealer, turn)
         self.maker = maker
@@ -118,7 +129,9 @@ class TrumpMadePhase(LiveGamePhase):
 
 
 class DiscardPhase(TrumpMadePhase):
+    """Short phase where the dealer discards a card."""
     def discard(self, card):
+        """Discard a card."""
         if not self.card_in_hand(card):
             raise IllegalMoveException()
 
@@ -133,6 +146,7 @@ class DiscardPhase(TrumpMadePhase):
 
 
 class PlayCardsPhase(TrumpMadePhase):
+    """The main phase of play."""
     def __init__(self, score, hands, dealer, turn, maker, sitting, trump,
                  trick, trick_score):
         super().__init__(score, hands, dealer, turn, maker, sitting, trump)
@@ -151,6 +165,10 @@ class PlayCardsPhase(TrumpMadePhase):
             raise IllegalMoveException()
 
     def following_suit(self, card):
+        """Return true if card follows suit, given current trump.
+
+        The first card of the trick always counts as following suit.
+        """
         if len(self.trick) == 0:
             return True
         return self.relative_suit(card) == self.led_suit()
@@ -160,13 +178,14 @@ class PlayCardsPhase(TrumpMadePhase):
 
     @property
     def relative_left(self):
-        """Return the player to the left, excluding sitter."""
+        """Return the player to the left, accounting for going-alone."""
         actual_left = self.left
         if self.sitting == actual_left:
             return self.left_of(actual_left)
         return actual_left
 
     def next_hand_or_victory(self):
+        """Proceed to next hand, or end game if someone has won."""
         for team, score in enumerate(self.score):
             if score >= 10:
                 return GameOver(team)
@@ -177,6 +196,7 @@ class PlayCardsPhase(TrumpMadePhase):
                            self.left_of(self.dealer, spots=1), new_up_card)
 
     def play(self, card):
+        """Play a card."""
         self.check_legal_move()
         self.current_hand.remove(card)
         self.trick.add_card(self.turn, card)
@@ -213,19 +233,23 @@ class PlayCardsPhase(TrumpMadePhase):
         return (suit_score, rank_score)
 
     def relative_suit(self, card):
+        """Return the suit of a card, accounting for trump."""
         if card.rank == Rank.jack and card.color == self.trump.color:
             return self.trump
         return card.suit
 
     def trick_full(self):
+        """Check if all cards have been played for this trick."""
         max_size = 3 if self.sitting is not None else 4
         return max_size == len(self.trick)
 
     def trick_winner(self):
+        """Find the winner of the current trick."""
         return max(range(4),
                    key=lambda x: self.relative_rank(self.trick.cards.get(x)))
 
     def score_trick(self):
+        """Return next state after trick is finished."""
         winning_player = self.trick_winner()
         winning_team = winning_player % 2
         self.trick_score[winning_team] += 1
@@ -236,6 +260,7 @@ class PlayCardsPhase(TrumpMadePhase):
         return self
 
     def score_round(self):
+        """Update game score after round and advance state."""
         winning_team, tricks_taken = max(enumerate(self.trick_score),
                                          key=itemgetter(1))
         if winning_team != self.maker % 2:
@@ -250,6 +275,7 @@ class PlayCardsPhase(TrumpMadePhase):
 
 
 class Trick:
+    """A simple representation of a trick."""
     def __init__(self, leader):
         self.leader = leader
         self.cards = {}
@@ -261,4 +287,5 @@ class Trick:
         self.cards[player] = card
 
     def led(self):
+        """The card that was led."""
         return self.cards[self.leader]
