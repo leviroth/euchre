@@ -15,6 +15,10 @@ def deal():
 
 
 class Phase:
+    """Base class for all game phases.
+
+    Concrete subclasses implement a state machine.
+    """
     pass
 
 
