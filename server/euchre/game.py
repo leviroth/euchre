@@ -200,7 +200,7 @@ class PlayCardsPhase(TrumpMadePhase):
 
     def play(self, card):
         """Play a card."""
-        self.check_legal_move()
+        self.check_legal_move(card)
         self.current_hand.remove(card)
         self.trick.add_card(self.turn, card)
         if self.trick_full():
