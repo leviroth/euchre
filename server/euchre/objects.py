@@ -56,6 +56,9 @@ class Card():
     def __hash__(self):
         return (self.rank, self.suit).__hash__()
 
+    def __repr__(self):
+        return "Card({!r}, {!r})".format(self.rank, self.suit)
+
     def __str__(self):
         return str(self.rank) + "." + str(self.suit)
 
