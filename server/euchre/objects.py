@@ -67,7 +67,7 @@ class Card():
         return self.suit.color
 
     @classmethod
-    def fromStrs(cls, r, s):
+    def from_strs(cls, r, s):
         rank = {'9': Rank.nine,
                 '10': Rank.ten,
                 'J': Rank.jack,
