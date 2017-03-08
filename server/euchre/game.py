@@ -134,6 +134,9 @@ class TrumpMadePhase(LiveGamePhase):
 
 class DiscardPhase(TrumpMadePhase):
     """Short phase where the dealer discards a card."""
+    def __init__(self, score, hands, dealer, maker, sitting, trump):
+        super().__init__(score, hands, dealer, dealer, maker, sitting, trump)
+
     def discard(self, card):
         """Discard a card."""
         if not self.card_in_hand(card):
