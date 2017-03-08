@@ -51,7 +51,7 @@ class LiveGamePhase:
     @property
     def left(self):
         """The player to the left of the player whose turn it is."""
-        return self.left_of(self.player)
+        return self.left_of(self.turn)
 
     def left_of(self, player, spots=1):
         """Advance the given number of spots from the given player."""
