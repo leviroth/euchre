@@ -1,6 +1,6 @@
 from operator import itemgetter
 
-from .exceptions import IllegalMoveException
+from .exceptions import IllegalMoveException, OutOfTurnException
 from .objects import Deck, Rank
 
 
@@ -12,6 +12,30 @@ def deal():
     for i in range(4):
         hands.append([deck.draw() for _ in range(5)])
     return (hands, deck.draw())
+
+
+class Game:
+    """Context for game state."""
+    moves = "call pass_bid discard play".split()
+
+    def __init__(self, state):
+        self.state = state
+
+    def perform_move(self, move, player, *args, **kwargs):
+        """Perform move, provided it is player's turn. Rerturn resulting state.
+
+        Caller is responsible for ensuring that arguments are of correct type.
+
+        """
+        if move not in self.moves:
+            raise RuntimeError("No such move")
+        if player != self.state.turn:
+            raise OutOfTurnException(player, self.state.turn)
+        try:
+            self.state = self.state.__getattribute__(move)(*args, **kwargs)
+            return self.state
+        except AttributeError:
+            raise IllegalMoveException("Wrong phase for that move")
 
 
 class Phase:
