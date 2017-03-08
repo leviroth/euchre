@@ -100,7 +100,7 @@ class BidPhaseOne(BidPhase):
         if alone:
             if self.across == self.dealer:
                 return PlayCardsPhase(self.score, self.hands, self.dealer,
-                                      self.left, self.across,
+                                      self.left, self.turn, self.across,
                                       self.up_card.suit, Trick(self.dealer),
                                       [0, 0])
             else:
