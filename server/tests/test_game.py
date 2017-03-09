@@ -86,7 +86,7 @@ def test_pass():
 
 def test_order_up():
     g = initial_game_state()
-    next_state = g.perform_move('call', 1, False)
+    next_state = g.perform_move('call_one', 1, False)
     dealer_hand = next_state.hands[0]
     assert isinstance(next_state, DiscardPhase)
     assert next_state.turn == 0
@@ -97,14 +97,14 @@ def test_order_up():
 
 def test_go_alone():
     g = initial_game_state()
-    next_state = g.perform_move('call', 1, True)
+    next_state = g.perform_move('call_one', 1, True)
     assert next_state.sitting == 3
 
 
 def test_skip_discard_on_alone():
     g = initial_game_state()
     g.perform_move('pass_bid', 1)
-    next_state = g.perform_move('call', 2, True)
+    next_state = g.perform_move('call_one', 2, True)
     assert isinstance(next_state, PlayCardsPhase)
 
 
@@ -123,7 +123,7 @@ def test_call_bid_two():
     g.perform_move('pass_bid', 2)
     g.perform_move('pass_bid', 3)
     g.perform_move('pass_bid', 0)
-    next_state = g.perform_move('call', 1, False, Suit.spades)
+    next_state = g.perform_move('call_two', 1, False, Suit.spades)
     assert isinstance(next_state, PlayCardsPhase)
     assert next_state.trump == Suit.spades
 
@@ -135,7 +135,7 @@ def test_turned_down_trump():
     g.perform_move('pass_bid', 3)
     g.perform_move('pass_bid', 0)
     with pytest.raises(IllegalMoveException):
-        g.perform_move('call', 1, False, Suit.diamonds)
+        g.perform_move('call_two', 1, False, Suit.diamonds)
 
 
 def test_stick_dealer():
@@ -154,7 +154,7 @@ def test_stick_dealer():
 def test_discard():
     g = initial_game_state()
     initial_hand = g.state.hands[0].copy()
-    g.perform_move('call', 1, False)
+    g.perform_move('call_one', 1, False)
     next_state = g.perform_move('discard', 0, Card.from_str("10.D"))
     assert isinstance(next_state, PlayCardsPhase)
     assert len(next_state.hands[0]) == 5
@@ -165,7 +165,7 @@ def test_discard():
 
 def test_invalid_discard():
     g = initial_game_state()
-    g.perform_move('call', 1, False)
+    g.perform_move('call_one', 1, False)
     with pytest.raises(IllegalMoveException):
         g.perform_move('discard', 0, Card.from_str("10.S"))
 

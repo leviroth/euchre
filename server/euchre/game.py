@@ -21,7 +21,7 @@ def initial_game_state():
 
 class Game:
     """Context for game state."""
-    moves = "call pass_bid discard play".split()
+    moves = "call_one call_two pass_bid discard play".split()
 
     def __init__(self, state):
         self.state = state
@@ -97,7 +97,7 @@ class BidPhaseOne(BidPhase):
     def __str__(self):
         return "bid1"
 
-    def call(self, alone):
+    def call_one(self, alone):
         """Order the dealer to pick up the upcard."""
         if not isinstance(alone, bool):
             raise TypeError()
@@ -130,7 +130,7 @@ class BidPhaseTwo(BidPhase):
     def __str__(self):
         return "bid2"
 
-    def call(self, alone, trump):
+    def call_two(self, alone, trump):
         """Name trump."""
         if not isinstance(alone, bool):
             raise TypeError()
