@@ -1,139 +1,137 @@
-import euchre.objects
+import json
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
-import functools
+from bidict import bidict
+from .game import Game, initial_game_state
+from .encoder import CardEncoder, PublicStateEncoder
 
 
-class MyComponent(ApplicationSession):
+class Lobby:
+    def __init__(self, lobby_id, coordinator):
+        self.lobby_id = lobby_id
+        self.coordinator = coordinator
+        self.game = None
+        self.members = set()
+        self.seats_to_players = bidict()
+
+    def change_seat(self, player, seat):
+        self.join_seat(player, seat)
+        self.leave_seat(player)
+
+    def check_seat_open(self, seat):
+        if seat < 0 or seat > 3:
+            raise RuntimeError("No such seat.")
+        if seat in self.seats_to_players:
+            raise RuntimeError("Seat is taken.")
+
+    def join_lobby(self, player):
+        self.members.add(player)
+
+    def join_seat(self, player, seat):
+        if player not in self.members:
+            raise RuntimeError("Not in this lobby.")
+        self.check_seat_open(seat)
+        self.seats_to_players[seat] = player
+
+    def leave_seat(self, player):
+        del(self.seats_to_players.inv[player])
+
+    def perform_move(self, move, player, *args, **kwargs):
+        self.game.perform_move(move, self.seats_to_players.inv[player],
+                               *args, **kwargs)
+        self.coordinator.publish_state(self)
+
+    def start_game(self):
+        self.game = Game(initial_game_state())
+
+
+class Player:
+    def __hash__(self):
+        return self.player_id
+
+    def __init__(self, player_id, name, coordinator):
+        self.player_id = player_id
+        self.name = name
+        self.coordinator = coordinator
+
+    def change_seat(self, lobby_id, seat):
+        self.coordinator.lobbies[lobby_id].change_seat(self, seat)
+
+    def create_lobby(self):
+        lobby = self.coordinator.create_lobby()
+        lobby.join_lobby(self)
+        return lobby.lobby_id
+
+    def join_lobby(self, lobby_id):
+        self.coordinator.lobbies[lobby_id].join_lobby(self)
+
+    def join_seat(self, lobby_id, seat):
+        self.coordinator.lobbies[lobby_id].join_seat(self, seat)
+
+    def perform_move(self, lobby_id, move, *args, **kwargs):
+        self.coordinator.lobbies[lobby_id].perform_move(move, self, *args,
+                                                        **kwargs)
+
+    def start_game(self, lobby_id):
+        self.coordinator.lobbies[lobby_id].start_game()
+
+
+class Coordinator(ApplicationSession):
+    def create_lobby(self):
+        lobby_id = self.lobby_count
+        self.lobby_count += 1
+        lobby = Lobby(lobby_id, self)
+        self.lobbies[lobby_id] = lobby
+        return lobby
+
+    def publish_state(self, lobby):
+        lobby_prefix = 'lobby{n}'.format(n=lobby.lobby_id)
+        self.publish(
+            '{lp}.publicstate'.format(lp=lobby_prefix),
+            json.loads(json.dumps(lobby.game.state, cls=PublicStateEncoder)))
+        for seat, player in lobby.seats_to_players.items():
+            self.publish(
+                '{lp}.hands.player{pn}'.format(lp=lobby_prefix,
+                                               pn=player.player_id),
+                json.loads(json.dumps(lobby.game.state.hands[seat],
+                                      cls=CardEncoder)))
+
     async def onJoin(self, details):
         print("session joined")
         print("Details: {}".format(details))
 
         self.players = dict()
         self.player_count = 0
-        self.hand = None
+        self.lobbies = dict()
+        self.lobby_count = 0
 
-        def deal():
-            for player in self.players.values():
-                self.publish('realm1.p{}.hand'.format(player.position),
-                             [str(card) for card in player.hand])
-            self.publish('realm1.newhand')
-
-        def new_trick():
-            self.publish('realm1.newtrick')
-
-        ui = euchre.objects.UserInterface(
-            new_hand=deal,
-            new_trick=new_trick,
-            card_played=lambda x: self.publish('realm1.card_played', x)
-            )
-
-        self.t = euchre.objects.Table(lambda x: self.publish('realm1.msg', x),
-                                      ui)
-
-        def create_player(name="Player"):
-            player = euchre.objects.Player()
-            player.setName(name)
-            self.players[self.player_count] = player
+        async def join_server():
+            player_id = self.player_count
             self.player_count += 1
-            return self.player_count - 1
+            name = "Player {}".format(player_id)
+            player = Player(player_id, name, self)
+            self.players[player_id] = player
 
-        def set_name(player_id, name):
-            self.players[player_id].setName(name)
-            self.publish('realm1.player_names', [player_id, name])
+            await self.register(
+                player.perform_move,
+                'player{n}.perform_move'.format(n=player_id))
+            await self.register(
+                player.create_lobby,
+                'player{n}.create_lobby'.format(n=player_id))
+            await self.register(
+                player.join_lobby,
+                'player{n}.join_lobby'.format(n=player_id))
+            await self.register(
+                player.start_game,
+                'player{n}.start_game'.format(n=player_id))
+            await self.register(
+                player.join_seat,
+                'player{n}.join_seat'.format(n=player_id))
 
-        def set_position(player_id, position):
-            self.players[player_id].set_position(position)
+            return player_id, name
 
-        async def run():
-            print("running")
-            self.t.run()
-            deal()
-            publish_state()
-
-        async def join_table(player_num, position):
-            player = self.players[player_num]
-            player.joinTable(self.t, position)
-            await self.register(functools.partial(bid1, player),
-                                'realm1.p{}.bid1'.format(player.position))
-            await self.register(functools.partial(bid2, player),
-                                'realm1.p{}.bid2'.format(player.position))
-            await self.register(functools.partial(discard, player),
-                                'realm1.p{}.discard'.format(player.position))
-            await self.register(functools.partial(play_card, player),
-                                'realm1.p{}.play'.format(player.position))
-            print("player {} ({}) joined at position {}"
-                  .format(player_num, player.name, position))
-
-        def publish_state():
-            loner = None
-            try:
-                if self.t.hand.phase.alone:
-                    loner = self.t.hand.phase.maker
-            except AttributeError:
-                pass
-
-            tricks_taken = [0, 0]
-            try:
-                tricks_taken = list(self.t.hand.phase.tricksTaken.values())
-            except AttributeError:
-                pass
-
-            self.publish('realm1.state', {
-                "upcard": str(self.t.hand.upCard),
-                "phase": str(self.t.hand.phase),
-                "turn": self.t.hand.phase.turn.position,
-                "dealer": self.t.hand.dealer.position,
-                "score": self.t.points,
-                "alone": loner,
-                "trickScore": tricks_taken
-            })
-
-        def bid1(player, call, alone):
-            try:
-                player.bid1(call, alone)
-                publish_state()
-                dealer = self.t.hand.dealer
-                self.publish('realm1.p{}.hand'.format(dealer.position),
-                             [str(card) for card in dealer.hand])
-                return True
-            except Exception as e:
-                return False
-
-        def bid2(player, call, alone, suit):
-            try:
-                player.bid2(call, alone, suit)
-                publish_state()
-                return True
-            except Exception as e:
-                return False
-
-        def discard(player, card_str):
-            card = euchre.objects.Card.fromStrs(*card_str.split('.'))
-            try:
-                player.discard(card)
-                publish_state()
-                return True
-            except Exception:
-                return False
-
-        def play_card(player, card_str):
-            card = euchre.objects.Card.fromStrs(*card_str.split('.'))
-            try:
-                player.playCard(card)
-            except Exception as e:
-                print(e)
-                return False
-            else:
-                publish_state()
-                return True
-
-        await self.register(create_player, 'realm1.create_player')
-        await self.register(set_name, 'realm1.set_name')
-        await self.register(set_position, 'realm1.set_position')
-        await self.register(join_table, 'realm1.join_table')
-        await self.register(run, 'realm1.run')
+        await self.register(join_server, 'join_server')
 
 
 if __name__ == '__main__':
     runner = ApplicationRunner(url=u"ws://localhost:8080/ws", realm=u"realm1")
-    runner.run(MyComponent)
+    runner.run(Coordinator)
