@@ -159,6 +159,8 @@ def test_discard():
     assert isinstance(next_state, PlayCardsPhase)
     assert len(next_state.hands[0]) == 5
     assert next_state.hands[0] == initial_hand
+    assert next_state.sitting is None
+    assert next_state.maker == 1
 
 
 def test_invalid_discard():

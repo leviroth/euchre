@@ -183,7 +183,7 @@ class DiscardPhase(TrumpMadePhase):
         else:
             next_player = self.left_of(self.maker)
         return PlayCardsPhase(self.score, self.hands, self.dealer, next_player,
-                              self.sitting, self.trump, self.trump,
+                              self.maker, self.sitting, self.trump,
                               Trick(next_player), [0, 0])
 
 
