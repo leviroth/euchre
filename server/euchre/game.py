@@ -245,6 +245,8 @@ class PlayCardsPhase(TrumpMadePhase):
         the sitting player.
 
         """
+        if card is None:
+            return (-1, 0)
         if self.relative_suit(card) == self.trump:
             suit_score = 2
         elif self.relative_suit(card) == self.led_suit():
