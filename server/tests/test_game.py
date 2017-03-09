@@ -7,14 +7,18 @@ from euchre.game import (BidPhaseOne, BidPhaseTwo, DiscardPhase, Game,
 from euchre.objects import Card, Suit
 
 
+def hand_from_str(s):
+    """Return a list of Card objects from a list of space-separated strings."""
+    return [Card.from_str(card_str) for card_str in s.split()]
+
+
 def initial_game_state():
     hand_strs = ["A.S K.S J.S Q.H 9.D",
                  "A.C K.C J.C Q.D 9.H",
                  "A.H K.H J.H Q.C 9.C",
                  "A.D K.D J.D Q.S 9.S"]
     score = [0, 0]
-    hands = [[Card.from_str(card_str) for card_str in s.split()]
-             for s in hand_strs]
+    hands = [hand_from_str(s) for s in hand_strs]
     up_card = Card.from_str("10.D")
     initial_phase = BidPhaseOne(score, hands, 0, 1, up_card)
     return Game(initial_phase)
