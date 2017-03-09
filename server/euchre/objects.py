@@ -46,6 +46,20 @@ class Rank(Enum):
 
 
 class Card():
+    rank_map = {'9': Rank.nine,
+                '10': Rank.ten,
+                'J': Rank.jack,
+                'Q': Rank.queen,
+                'K': Rank.king,
+                'A': Rank.ace,
+                }
+
+    suit_map = {'C': Suit.clubs,
+                'D': Suit.diamonds,
+                'H': Suit.hearts,
+                'S': Suit.spades,
+                }
+
     def __init__(self, rank, suit):
         self.suit = suit
         self.rank = rank
@@ -67,22 +81,12 @@ class Card():
         return self.suit.color
 
     @classmethod
-    def from_strs(cls, r, s):
-        rank = {'9': Rank.nine,
-                '10': Rank.ten,
-                'J': Rank.jack,
-                'Q': Rank.queen,
-                'K': Rank.king,
-                'A': Rank.ace
-                }
-
-        suit = {'C': Suit.clubs,
-                'D': Suit.diamonds,
-                'H': Suit.hearts,
-                'S': Suit.spades,
-                }
-
-        return cls(rank[r], suit[s])
+    def from_str(cls, card_str):
+        """Return a card from its str() representation."""
+        rank_str, suit_str = card_str.split('.')
+        rank = cls.rank_map[rank_str]
+        suit = cls.suit_map[suit_str]
+        return cls(rank, suit)
 
 
 class Deck():
