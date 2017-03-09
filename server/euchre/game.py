@@ -1,7 +1,7 @@
 from operator import itemgetter
 
 from .exceptions import IllegalMoveException, OutOfTurnException
-from .objects import Deck, Rank
+from .objects import Card, Deck, Rank, Suit
 
 
 def deal():
@@ -14,6 +14,11 @@ def deal():
     return (hands, deck.draw())
 
 
+def initial_game_state():
+    hands, up_card = deal()
+    return BidPhaseOne([0, 0], hands, 0, 1, up_card)
+
+
 class Game:
     """Context for game state."""
     moves = "call pass_bid discard play".split()
@@ -22,9 +27,7 @@ class Game:
         self.state = state
 
     def perform_move(self, move, player, *args, **kwargs):
-        """Perform move, provided it is player's turn. Rerturn resulting state.
-
-        Caller is responsible for ensuring that arguments are of correct type.
+        """Perform move, provided it is player's turn. Return resulting state.
 
         """
         if move not in self.moves:
@@ -96,6 +99,9 @@ class BidPhaseOne(BidPhase):
 
     def call(self, alone):
         """Order the dealer to pick up the upcard."""
+        if not isinstance(alone, bool):
+            raise TypeError()
+
         self.hands[self.dealer].append(self.up_card)
         if alone:
             if self.across == self.dealer:
@@ -126,6 +132,11 @@ class BidPhaseTwo(BidPhase):
 
     def call(self, alone, trump):
         """Name trump."""
+        if not isinstance(alone, bool):
+            raise TypeError()
+        if not isinstance(trump, Suit):
+            raise TypeError()
+
         if trump == self.up_card.suit:
             raise IllegalMoveException()
         if alone:
@@ -227,6 +238,9 @@ class PlayCardsPhase(TrumpMadePhase):
 
     def play(self, card):
         """Play a card."""
+        if not isinstance(card, Card):
+            raise TypeError()
+
         self.check_legal_move(card)
         self.current_hand.remove(card)
         self.trick.add_card(self.turn, card)
