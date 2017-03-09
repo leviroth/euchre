@@ -3,7 +3,7 @@ import pytest
 
 from euchre.exceptions import IllegalMoveException, OutOfTurnException
 from euchre.game import (BidPhaseOne, BidPhaseTwo, DiscardPhase, Game,
-                         PlayCardsPhase)
+                         GameOver, PlayCardsPhase, Trick)
 from euchre.objects import Card, Suit
 
 
@@ -22,6 +22,42 @@ def initial_game_state():
     up_card = Card.from_str("10.D")
     initial_phase = BidPhaseOne(score, hands, 0, 1, up_card)
     return Game(initial_phase)
+
+
+def play_phase_start_state(trump=Suit.spades):
+    hand_strs = ["A.S K.S J.S Q.H 9.D",
+                 "A.C K.C J.C Q.D 9.H",
+                 "A.H K.H J.H Q.C 9.C",
+                 "A.D K.D J.D Q.S 9.S"]
+    score = [0, 0]
+    hands = [hand_from_str(s) for s in hand_strs]
+    dealer = 0
+    turn = 1
+    maker = 1
+    sitting = None
+    trick = Trick(turn)
+    trick_score = [0, 0]
+    phase = PlayCardsPhase(score, hands, dealer, turn, maker, sitting, trump,
+                           trick, trick_score)
+    return Game(phase)
+
+
+def round_almost_won_state(trump=Suit.spades):
+    hand_strs = ["A.C",
+                 "A.D",
+                 "A.H",
+                 "A.S"]
+    score = [0, 0]
+    hands = [hand_from_str(s) for s in hand_strs]
+    dealer = 0
+    turn = 1
+    maker = 1
+    sitting = None
+    trick = Trick(turn)
+    trick_score = [2, 2]
+    phase = PlayCardsPhase(score, hands, dealer, turn, maker, sitting, trump,
+                           trick, trick_score)
+    return Game(phase)
 
 
 def test_enforce_turn():
@@ -130,3 +166,96 @@ def test_invalid_discard():
     g.perform_move('call', 1, False)
     with pytest.raises(IllegalMoveException):
         g.perform_move('discard', 0, Card.from_str("10.S"))
+
+
+def test_play_card():
+    g = play_phase_start_state()
+    next_state = g.perform_move('play', 1, Card.from_str("A.C"))
+    assert next_state.trick.cards == {1: Card.from_str("A.C")}
+    next_state = g.perform_move('play', 2, Card.from_str("9.C"))
+    assert next_state.trick.cards == {1: Card.from_str("A.C"),
+                                      2: Card.from_str("9.C")}
+
+
+def test_play_full_trick():
+    g = play_phase_start_state()
+    g.perform_move('play', 1, Card.from_str("A.C"))
+    g.perform_move('play', 2, Card.from_str("9.C"))
+    g.perform_move('play', 3, Card.from_str("9.S"))
+    next_state = g.perform_move('play', 0, Card.from_str("J.S"))
+    assert next_state.trick.leader == 0
+    assert next_state.trick_score == [1, 0]
+    assert all(len(hand) == 4 for hand in next_state.hands)
+
+
+def test_check_reneg():
+    g = play_phase_start_state()
+    g.perform_move('play', 1, Card.from_str("A.C"))
+    with pytest.raises(IllegalMoveException):
+        g.perform_move('play', 2, Card.from_str("A.H"))
+
+
+def test_check_reneg__forced():
+    g = play_phase_start_state()
+    g.state.hands[2][4] = Card.from_str("A.H")
+    g.perform_move('play', 1, Card.from_str("A.C"))
+    with pytest.raises(IllegalMoveException):
+        g.perform_move('play', 2, Card.from_str("A.H"))
+
+
+def test_check_reneg__jack():
+    """Check that left bower is counted as trump suit."""
+    g = play_phase_start_state(trump=Suit.clubs)
+    g.state.hands[2] = hand_from_str("10.C J.S A.C Q.C K.C")
+    g.perform_move('play', 1, Card.from_str("A.C"))
+    g.perform_move('play', 2, Card.from_str("J.S"))
+
+
+def test_win_round__make():
+    g = round_almost_won_state()
+    g.perform_move('play', 1, Card.from_str("A.D"))
+    g.perform_move('play', 2, Card.from_str("A.H"))
+    g.perform_move('play', 3, Card.from_str("A.S"))
+    next_state = g.perform_move('play', 0, Card.from_str("A.C"))
+    assert next_state.score == [0, 1]
+
+
+def test_win_round__march():
+    g = round_almost_won_state()
+    g.state.trick_score = [0, 4]
+    g.perform_move('play', 1, Card.from_str("A.D"))
+    g.perform_move('play', 2, Card.from_str("A.H"))
+    g.perform_move('play', 3, Card.from_str("A.S"))
+    next_state = g.perform_move('play', 0, Card.from_str("A.C"))
+    assert next_state.score == [0, 2]
+
+
+def test_win_round__euchre():
+    g = round_almost_won_state()
+    g.state.maker = 2
+    g.perform_move('play', 1, Card.from_str("A.D"))
+    g.perform_move('play', 2, Card.from_str("A.H"))
+    g.perform_move('play', 3, Card.from_str("A.S"))
+    next_state = g.perform_move('play', 0, Card.from_str("A.C"))
+    assert next_state.score == [0, 2]
+
+
+def test_win_round__alone():
+    g = round_almost_won_state()
+    g.state.trick_score = [0, 4]
+    g.state.sitting = 3
+    g.perform_move('play', 1, Card.from_str("A.D"))
+    g.perform_move('play', 2, Card.from_str("A.H"))
+    next_state = g.perform_move('play', 0, Card.from_str("A.C"))
+    assert next_state.score == [0, 4]
+
+
+def test_win_game():
+    g = round_almost_won_state()
+    g.state.score = [9, 9]
+    g.perform_move('play', 1, Card.from_str("A.D"))
+    g.perform_move('play', 2, Card.from_str("A.H"))
+    g.perform_move('play', 3, Card.from_str("A.S"))
+    next_state = g.perform_move('play', 0, Card.from_str("A.C"))
+    assert isinstance(next_state, GameOver)
+    assert next_state.winning_team == 1
