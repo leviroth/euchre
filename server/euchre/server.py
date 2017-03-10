@@ -33,6 +33,8 @@ class Lobby:
         self.seats_to_players[seat] = player
 
     def leave_seat(self, player):
+        if self.game is not None:
+            raise RuntimeError("Not in the middle of a game!")
         del(self.seats_to_players.inv[player])
 
     def perform_move(self, move, player, *args, **kwargs):
@@ -41,7 +43,9 @@ class Lobby:
         self.coordinator.publish_state(self)
 
     def start_game(self):
-        self.game = Game(initial_game_state())
+        if len(self.seats_to_players) != 4:
+            raise RuntimeError("Not enough players.")
+        self.game = GameLayer(Game(initial_game_state()))
 
 
 class Player:
