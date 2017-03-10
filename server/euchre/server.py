@@ -130,6 +130,9 @@ class Coordinator(ApplicationSession):
             await self.register(
                 player.join_seat,
                 'player{n}.join_seat'.format(n=player_id))
+            await self.register(
+                player.change_seat,
+                'player{n}.change_seat'.format(n=player_id))
 
             return player_id, name
 
