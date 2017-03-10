@@ -3,6 +3,26 @@ from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from bidict import bidict
 from .game import Game, initial_game_state
 from .encoder import CardEncoder, PublicStateEncoder
+from .objects import Card
+
+
+class GameLayer:
+    def __init__(self, game):
+        self.game = game
+
+    @property
+    def state(self):
+        return self.game.state
+
+    def perform_move(self, move, player, *args):
+        if move == 'call_two':
+            alone = args[0]
+            suit = Card.suit_map[args[1]]
+            return self.game.perform_move(move, player, alone, suit)
+        if move == 'discard' or move == 'play':
+            card = Card.from_str(args[0])
+            return self.game.perform_move(move, player, card)
+        return self.game.perform_move(move, player, *args)
 
 
 class Lobby:
