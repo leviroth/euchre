@@ -12,10 +12,10 @@ class CardEncoder(json.JSONEncoder):
 
 
 class PublicStateEncoder(CardEncoder):
-    DICT_ENCODE = {BidPhaseOne: 'bidphase1',
-                   BidPhaseTwo: 'bidphase2',
-                   DiscardPhase: 'discardphase',
-                   PlayCardsPhase: 'playphase',
+    DICT_ENCODE = {BidPhaseOne: 'bid1',
+                   BidPhaseTwo: 'bid2',
+                   DiscardPhase: 'discard',
+                   PlayCardsPhase: 'play',
                    GameOver: 'gameover',
                    }
 
@@ -23,7 +23,9 @@ class PublicStateEncoder(CardEncoder):
         for t in self.DICT_ENCODE:
             if isinstance(o, t):
                 d = {k: v for k, v in o.__dict__.items() if k != 'hands'}
-                return {self.DICT_ENCODE[t]: d}
+                d['hands'] = [len(hand) for hand in o.hands]
+                d['phase'] = self.DICT_ENCODE[t]
+                return d
         if isinstance(o, Suit):
             return str(o)
         if isinstance(o, Trick):

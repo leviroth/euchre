@@ -26,8 +26,9 @@ class GameLayer:
 
 
 class Lobby:
-    def __init__(self, lobby_id, coordinator):
+    def __init__(self, lobby_id, name, coordinator):
         self.lobby_id = lobby_id
+        self.name = name
         self.coordinator = coordinator
         self.game = None
         self.members = set()
@@ -66,6 +67,7 @@ class Lobby:
         if len(self.seats_to_players) != 4:
             raise RuntimeError("Not enough players.")
         self.game = GameLayer(Game(initial_game_state()))
+        self.coordinator.publish_state(self)
 
 
 class Player:
@@ -80,8 +82,8 @@ class Player:
     def change_seat(self, lobby_id, seat):
         self.coordinator.lobbies[lobby_id].change_seat(self, seat)
 
-    def create_lobby(self):
-        lobby = self.coordinator.create_lobby()
+    def create_lobby(self, name):
+        lobby = self.coordinator.create_lobby(name)
         lobby.join_lobby(self)
         return lobby.lobby_id
 
@@ -100,10 +102,10 @@ class Player:
 
 
 class Coordinator(ApplicationSession):
-    def create_lobby(self):
+    def create_lobby(self, name):
         lobby_id = self.lobby_count
         self.lobby_count += 1
-        lobby = Lobby(lobby_id, self)
+        lobby = Lobby(lobby_id, name, self)
         self.lobbies[lobby_id] = lobby
         return lobby
 
@@ -128,10 +130,11 @@ class Coordinator(ApplicationSession):
         self.lobbies = dict()
         self.lobby_count = 0
 
-        async def join_server():
+        async def join_server(name=None):
             player_id = self.player_count
+            if name is None:
+                name = "Player {}".format(player_id)
             self.player_count += 1
-            name = "Player {}".format(player_id)
             player = Player(player_id, name, self)
             self.players[player_id] = player
 
