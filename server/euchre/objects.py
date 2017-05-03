@@ -1,9 +1,5 @@
 from random import shuffle
 from enum import Enum, unique
-from euchre.exceptions import TurnError
-from euchre import phases
-import itertools
-from functools import wraps
 
 
 Color = Enum('Color', 'red black')
@@ -49,24 +45,21 @@ class Rank(Enum):
     ace = "A"
 
 
-class Deck():
-    def __init__(self):
-        self.cards = {Card(rank, suit) for suit in Suit
-                      for rank in Rank}
-        self.reset()
-
-    def draw(self):
-        return self.remaining.pop()
-
-    def shuffle(self):
-        shuffle(self.remaining)
-
-    def reset(self):
-        self.remaining = list(self.cards)
-        self.shuffle()
-
-
 class Card():
+    rank_map = {'9': Rank.nine,
+                '10': Rank.ten,
+                'J': Rank.jack,
+                'Q': Rank.queen,
+                'K': Rank.king,
+                'A': Rank.ace,
+                }
+
+    suit_map = {'C': Suit.clubs,
+                'D': Suit.diamonds,
+                'H': Suit.hearts,
+                'S': Suit.spades,
+                }
+
     def __init__(self, rank, suit):
         self.suit = suit
         self.rank = rank
@@ -77,6 +70,9 @@ class Card():
     def __hash__(self):
         return (self.rank, self.suit).__hash__()
 
+    def __repr__(self):
+        return "Card({!r}, {!r})".format(self.rank, self.suit)
+
     def __str__(self):
         return str(self.rank) + "." + str(self.suit)
 
@@ -85,158 +81,22 @@ class Card():
         return self.suit.color
 
     @classmethod
-    def fromStrs(cls, r, s):
-        rank = {'9': Rank.nine,
-                '10': Rank.ten,
-                'J': Rank.jack,
-                'Q': Rank.queen,
-                'K': Rank.king,
-                'A': Rank.ace
-                }
-
-        suit = {'C': Suit.clubs,
-                'D': Suit.diamonds,
-                'H': Suit.hearts,
-                'S': Suit.spades,
-                }
-
-        return cls(rank[r], suit[s])
+    def from_str(cls, card_str):
+        """Return a card from its str() representation."""
+        rank_str, suit_str = card_str.split('.')
+        rank = cls.rank_map[rank_str]
+        suit = cls.suit_map[suit_str]
+        return cls(rank, suit)
 
 
-class Player():
-    def requireTurn(phase):
-        def real_decorator(func):
-            @wraps(func)
-            def _func(self, *args, **kwargs):
-                if not self.table.hasPriority(self, phase):
-                    raise TurnError("It's not the time for that")
-                return func(self, *args, **kwargs)
-            return _func
-
-        return real_decorator
+class Deck():
+    cards = [Card(rank, suit) for suit in Suit for rank in Rank]
 
     def __init__(self):
-        self.name = "<unnamed>"
+        self.remaining = self.cards.copy()
 
-    def __str__(self):
-        return self.name
+    def draw(self):
+        return self.remaining.pop()
 
-    def __hash__(self):
-        return self.n.__hash__()
-
-    def setName(self, name):
-        self.name = name
-
-    def joinTable(self, table, position):
-        table.addPlayer(self, position)
-        self.table = table
-        self.position = position
-
-    def leaveTable(self):
-        self.table.removePlayer(self.position)
-
-    def set_position(self, position):
-        self.leaveTable()
-        self.joinTable(self.table, position)
-
-    @requireTurn(phases.Bid1Phase)
-    def bid1(self, call, alone=False):
-        if call:
-            self.table.hand.phase.call(self, alone)
-            return self.table.hand.upCard.suit
-        else:
-            self.table.hand.phase.passTurn()
-
-    @requireTurn(phases.Bid2Phase)
-    def bid2(self, call, alone=False, suit=None):
-        if call:
-            if suit is None:
-                raise ValueError("Must choose suit")
-            if suit is self.table.hand.upCard.suit:
-                raise ValueError("Suit was turned down")
-            else:
-                self.table.hand.phase.call(self, alone, suit)
-        else:
-            self.table.hand.phase.passTurn()
-
-    @requireTurn(phases.PlayPhase)
-    def playCard(self, card):
-        trick = self.table.currentTrick
-        if card not in self.hand:
-            raise ValueError("Card not in hand")
-        if (not trick.following(card)) \
-            and (trick.ledSuit in
-                 [trick.relativeSuit(c) for c in self.hand]):
-            raise ValueError("May not renege")
-        self.table.ui.card_played([str(card), self.position])
-
-        self.hand.remove(card)
-        trick.play(self, card)
-
-    @requireTurn(phases.DiscardPhase)
-    def discard(self, card):
-        if card not in self.hand:
-            raise ValueError("You don't have that card")
-        self.hand.remove(card)
-        self.table.hand.phase.proceed()
-
-
-class Table():
-    def __init__(self, broadcaster, ui):
-        self.players = {}
-        self.points = {x: 0 for x in range(2)}
-        self.won = False
-        self.broadcaster = broadcaster
-        self.ui = ui
-
-    def broadcast(self, message):
-        self.broadcaster(message)
-
-    def addPlayer(self, player, position):
-        self.players[position] = player
-
-    def removePlayer(self, position):
-        self.players.pop(position)
-
-    def hasPriority(self, *args, **kwargs):
-        try:
-            return self.hand.hasPriority(*args, **kwargs)
-        except AttributeError:
-            return False
-
-    @property
-    def currentTrick(self):
-        return self.hand.phase.trick
-
-    def run(self):
-        for i in range(4):
-            self.players[i].n = i
-            self.players[i].left = self.players[(i + 1) % 4]
-            self.players[i].partner = self.players[(i + 2) % 4]
-            self.players[i].team = i % 2
-        self.dealCycle = itertools.cycle(self.players.values())
-        self.nextHand()
-
-    def nextHand(self):
-        self.hand = phases.Hand(self, next(self.dealCycle))
-        self.hand.run()
-
-    def win(self, team):
-        self.broadcast("Team {} won".format(team))
-
-    def updateScore(self, team, points):
-        self.points[team] += points
-        self.broadcast("Team {} won the round and gets {} points"
-                       .format(team, points))
-        if self.points[team] >= 10:
-            self.won = True
-            self.win(team)
-        else:
-            self.nextHand()
-
-
-class UserInterface:
-    def __init__(self, new_hand, new_trick, card_played):
-        self.new_hand = new_hand
-        self.new_trick = new_trick
-        self.card_played = card_played
+    def shuffle(self):
+        shuffle(self.remaining)
