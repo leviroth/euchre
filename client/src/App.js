@@ -512,7 +512,9 @@ class App extends Component {
                   phase: res.phase,
                   score: res.score,
                   sitting: res.sitting,
+                  trick: res.trick,
                   trickScore: res.trick_score,
+                  trump: res.trump,
                   turn: res.turn,
                   upcard: res.up_card
                 }}}}})));
