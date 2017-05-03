@@ -22,7 +22,7 @@ function suitToSymbol(suit) {
 }
 
 function resolvePlayerPosition(position, player) {
-  switch (position) {
+  switch (Number(position)) {
     case (player + 1) % 4:
       return "left";
     case (player + 2) % 4:
@@ -292,7 +292,7 @@ class Trick extends Component {
     const player = this.props.player;
     return (
       <div className="trick" >
-        {cards.map((card, position) =>
+        {Object.entries(cards).map(([position, card]) =>
           (card &&
            <div key={card} className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
             {FaceUpCard.fromStr(card, () => false)}
@@ -376,7 +376,7 @@ class Table extends Component {
           onClick={(i) => this.props.handleCardClick(i)}
         />
         {this.renderBidControls()}
-        {phase === "play" && <Trick cards={this.props.trick} />}
+        {phase === "play" && <Trick cards={this.props.trick} player={player} />}
       </div>
     );
   }
