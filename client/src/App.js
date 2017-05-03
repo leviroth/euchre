@@ -1,10 +1,7 @@
-import React, {
-  Component
-} from 'react';
-import update from 'immutability-helper';
-import './App.css';
-import autobahn from 'autobahn';
-
+import React, { Component } from "react";
+import update from "immutability-helper";
+import "./App.css";
+import autobahn from "autobahn";
 
 function suitToSymbol(suit) {
   switch (suit) {
@@ -37,11 +34,11 @@ function resolvePlayerPosition(position, player) {
 function ChatDisplay(props) {
   return (
     <div>
-      {props.messages.map((message) =>
+      {props.messages.map(message => (
         <div key={message.when}>
           <em>{message.sender}:</em> {message.text}
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -49,25 +46,25 @@ function ChatDisplay(props) {
 class ChatInput extends Component {
   constructor(props) {
     super(props);
-    this.state = {value: ''};
+    this.state = { value: "" };
   }
 
   handleChange(event) {
-    this.setState({value: event.target.value});
+    this.setState({ value: event.target.value });
   }
 
   handleKeyPress(event) {
     if (event.key === "Enter" && !event.shiftKey) {
       if (this.handleMessage(this.state.value)) {
-        this.setState({value: ''});
+        this.setState({ value: "" });
       }
       event.preventDefault();
     }
   }
 
   handleMessage(message) {
-    if (message.startsWith('/')) {
-      const [command, ...params] = message.split(' ');
+    if (message.startsWith("/")) {
+      const [command, ...params] = message.split(" ");
       switch (command) {
         case "/create":
         case "/createlobby":
@@ -81,13 +78,15 @@ class ChatInput extends Component {
           this.props.setName(params[0]);
           return true;
         case "/say":
-          this.props.sendMessage(params.join(' '));
+          this.props.sendMessage(params.join(" "));
           return true;
         case "/seat":
           this.props.joinSeat(params[0]);
           return true;
         default:
-          this.props.error("Unrecognized command. To start a message with '/', use '/say [message]'.")
+          this.props.error(
+            "Unrecognized command. To start a message with '/', use '/say [message]'."
+          );
           return false;
       }
     } else {
@@ -98,9 +97,11 @@ class ChatInput extends Component {
 
   render() {
     return (
-      <textarea style={{width: "100%", position: 'absolute', bottom: '200px'}}
-        value={this.state.value} onChange={(e) => this.handleChange(e)}
-        onKeyDown={(e) => this.handleKeyPress(e)}
+      <textarea
+        style={{ width: "100%", position: "absolute", bottom: "200px" }}
+        value={this.state.value}
+        onChange={e => this.handleChange(e)}
+        onKeyDown={e => this.handleKeyPress(e)}
       />
     );
   }
@@ -109,31 +110,35 @@ class ChatInput extends Component {
 class ChatBox extends Component {
   render() {
     return (
-      <div className="chatbox" >
+      <div className="chatbox">
         <ChatDisplay messages={this.props.messages} />
         <ChatInput
-          createLobby={(name) => this.props.createLobby(name)}
-          joinLobby={(lobby) => this.props.joinLobby(lobby)}
-          joinSeat={(pos) => this.props.joinSeat(pos)}
-          sendMessage={(msg) => this.props.sendMessage(msg)}
-          setName={(name) => this.props.setName(name)}
+          createLobby={name => this.props.createLobby(name)}
+          joinLobby={lobby => this.props.joinLobby(lobby)}
+          joinSeat={pos => this.props.joinSeat(pos)}
+          sendMessage={msg => this.props.sendMessage(msg)}
+          setName={name => this.props.setName(name)}
           error={console.log}
         />
       </div>
-    )
+    );
   }
 }
 
 function UIButton(props) {
   return (
-    <div className="button" onClick={() => props.onClick()}>{props.children}</div>
+    <div className="button" onClick={() => props.onClick()}>
+      {props.children}
+    </div>
   );
 }
 
 function LobbyTools(props) {
   return (
     <div>
-      <UIButton onClick={() => props.createLobby("cool lobby")}>Create lobby</UIButton>
+      <UIButton onClick={() => props.createLobby("cool lobby")}>
+        Create lobby
+      </UIButton>
       <UIButton onClick={() => props.joinLobby(0)}>Join lobby</UIButton>
     </div>
   );
@@ -142,10 +147,7 @@ function LobbyTools(props) {
 class Card extends Component {
   render() {
     return (
-      <div
-        className={`card card${this.props.color}`}
-        onClick={() => this.props.onClick()}
-      >
+      <div className={`card card${this.props.color}`} onClick={() => this.props.onClick()}>
         {this.props.children}
       </div>
     );
@@ -159,19 +161,12 @@ class FaceDownHand extends Component {
       <div className={`hand ${this.props.player}hand`}>
         <div className="playername">{this.props.playerName}</div>
         <div className="cards">
-          {[...Array(n)].map((x, i) =>
-            <Card
-              key={i}
-              color="black"
-              onClick={() => false} />
-           )
-          }
+          {[...Array(n)].map((x, i) => <Card key={i} color="black" onClick={() => false} />)}
         </div>
       </div>
     );
   }
 }
-
 
 function AloneControl(props) {
   return (
@@ -186,7 +181,7 @@ function AloneControl(props) {
 class Bid1Controls extends Component {
   constructor() {
     super();
-    this.state = {stage: "CALL"};
+    this.state = { stage: "CALL" };
   }
 
   render() {
@@ -194,12 +189,19 @@ class Bid1Controls extends Component {
       case "CALL":
         return (
           <div className={this.props.className}>
-            <UIButton onClick={() => this.setState({stage: "ALONE"})}>Pick it up</UIButton>
+            <UIButton onClick={() => this.setState({ stage: "ALONE" })}>
+              Pick it up
+            </UIButton>
             <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
           </div>
         );
       case "ALONE":
-        return <AloneControl className={this.props.className} onClick={(alone) => this.props.call(alone)}/>;
+        return (
+          <AloneControl
+            className={this.props.className}
+            onClick={alone => this.props.call(alone)}
+          />
+        );
       default:
         return null;
     }
@@ -209,15 +211,17 @@ class Bid1Controls extends Component {
 class Bid2Controls extends Component {
   constructor() {
     super();
-    this.state = {stage: "CALL"};
+    this.state = { stage: "CALL" };
   }
 
   render() {
     switch (this.state.stage) {
       case "CALL":
         return (
-          <div className={this.props.className} >
-            <UIButton onClick={() => this.setState({stage: "TRUMP"})}>Name trump</UIButton>
+          <div className={this.props.className}>
+            <UIButton onClick={() => this.setState({ stage: "TRUMP" })}>
+              Name trump
+            </UIButton>
             <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
           </div>
         );
@@ -225,15 +229,20 @@ class Bid2Controls extends Component {
         return (
           <div className={this.props.className}>
             <span className="control-label">Trump:</span>
-            {
-              "CDHS".split('').map((c) =>
-                <UIButton onClick={() => this.setState({stage: "ALONE", trump: c})}>{suitToSymbol(c)}</UIButton>
-              )
-            }
+            {"CDHS".split("").map(c => (
+              <UIButton onClick={() => this.setState({ stage: "ALONE", trump: c })}>
+                {suitToSymbol(c)}
+              </UIButton>
+            ))}
           </div>
         );
       case "ALONE":
-        return <AloneControl className={this.props.className} onClick={(alone) => this.props.call(this.state.trump, alone)}/>;
+        return (
+          <AloneControl
+            className={this.props.className}
+            onClick={alone => this.props.call(this.state.trump, alone)}
+          />
+        );
       default:
         return null;
     }
@@ -261,23 +270,19 @@ class FaceUpCard extends Component {
   }
 
   static fromStr(s, onClick) {
-    const [rank, suit] = s.split('.');
-    return (
-      <FaceUpCard suit={suit} rank={rank} key={rank + suit} onClick={onClick} />
-    );
+    const [rank, suit] = s.split(".");
+    return <FaceUpCard suit={suit} rank={rank} key={rank + suit} onClick={onClick} />;
   }
 }
 
 class Hand extends Component {
   render() {
-    const cardStrs = this.props.cards
+    const cardStrs = this.props.cards;
     return (
       <div className="hand myhand">
         <div className="cards">
           {cardStrs.map((cardStr, index) => {
-            return (
-              FaceUpCard.fromStr(cardStr, () => this.props.onClick(index))
-            );
+            return FaceUpCard.fromStr(cardStr, () => this.props.onClick(index));
           })}
         </div>
         <div className="playername">{this.props.playerName}</div>
@@ -291,13 +296,14 @@ class Trick extends Component {
     const cards = this.props.cards;
     const player = this.props.player;
     return (
-      <div className="trick" >
-        {Object.entries(cards).map(([position, card]) =>
-          (card &&
-           <div key={card} className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
-            {FaceUpCard.fromStr(card, () => false)}
-           </div>
-          ))}
+      <div className="trick">
+        {Object.entries(cards).map(
+          ([position, card]) =>
+            card &&
+            <div key={card} className={`trick${resolvePlayerPosition(position, player)} trickcard`}>
+              {FaceUpCard.fromStr(card, () => false)}
+            </div>
+        )}
       </div>
     );
   }
@@ -307,11 +313,13 @@ function Scoreboard(props) {
   const yourTeam = props.team;
   const otherTeam = 1 - yourTeam;
   return (
-    <div className="scoreboard" style={{textAlign: "left"}}>
-      {(props.dealing) ? <div>You are the dealer</div> : null}
-      {(props.turn) ? <div>It's your turn</div> : null}
-      {(props.trump !== undefined) ? <div>Trump: {props.trump}</div> : null}
-      <div>Tricks taken: {props.tricks[yourTeam]}–{props.tricks[otherTeam]} </div>
+    <div className="scoreboard" style={{ textAlign: "left" }}>
+      {props.dealing ? <div>You are the dealer</div> : null}
+      {props.turn ? <div>It's your turn</div> : null}
+      {props.trump !== undefined ? <div>Trump: {props.trump}</div> : null}
+      <div>
+        Tricks taken: {props.tricks[yourTeam]}–{props.tricks[otherTeam]}{" "}
+      </div>
       <div>Score: {props.scores[yourTeam]}–{props.scores[otherTeam]}</div>
     </div>
   );
@@ -329,7 +337,7 @@ class Table extends Component {
           return (
             <Bid1Controls
               className="bid-controls"
-              call={(alone) => this.props.bid1(true, alone)}
+              call={alone => this.props.bid1(true, alone)}
               pass={() => this.props.bid1(false, false)}
             />
           );
@@ -353,27 +361,31 @@ class Table extends Component {
 
     return (
       <div className="grid_8" id="table">
-        {(player !== null) ?
-         [0, 1, 2, 3].filter((x) => x !== player).map((position) =>
-           <FaceDownHand
-             size={this.props.hands[position]}
-             player={resolvePlayerPosition(position, player)}
-             playerName={this.props.playerNames[position]}
-             key={position}
-           />
-         ) :
-         [0, 1, 2, 3].map((position) =>
-           <UIButton onClick={() => this.props.joinSeat(position)}
-             key={position}>Join seat</UIButton>)
-        }
-        {this.props.phase && this.props.phase.startsWith("bid") &&
-         <div className="upcard">
-           {FaceUpCard.fromStr(this.props.upcard, () => false)}
-         </div>}
+        {player !== null
+          ? [0, 1, 2, 3]
+              .filter(x => x !== player)
+              .map(position => (
+                <FaceDownHand
+                  size={this.props.hands[position]}
+                  player={resolvePlayerPosition(position, player)}
+                  playerName={this.props.playerNames[position]}
+                  key={position}
+                />
+              ))
+          : [0, 1, 2, 3].map(position => (
+              <UIButton onClick={() => this.props.joinSeat(position)} key={position}>
+                Join seat
+              </UIButton>
+            ))}
+        {this.props.phase &&
+          this.props.phase.startsWith("bid") &&
+          <div className="upcard">
+            {FaceUpCard.fromStr(this.props.upcard, () => false)}
+          </div>}
         <Hand
           playerName={this.props.playerNames[this.props.player]}
           cards={this.props.hand}
-          onClick={(i) => this.props.handleCardClick(i)}
+          onClick={i => this.props.handleCardClick(i)}
         />
         {this.renderBidControls()}
         {phase === "play" && <Trick cards={this.props.trick} player={player} />}
@@ -385,24 +397,35 @@ class Table extends Component {
 class Lobby extends Component {
   addMessage(message) {
     message.when = Date.now();
-    this.setState((prevState) => ({messages: prevState.messages.concat(message)}));
+    this.setState(prevState => ({
+      messages: prevState.messages.concat(message)
+    }));
   }
 
   bid1(call, alone) {
     const session = this.props.session;
     if (call) {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, 'call_one', alone]);
+      session.call(`player${this.props.player}.perform_move`, [
+        this.props.number,
+        "call_one",
+        alone
+      ]);
     } else {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, 'pass_bid']);
+      session.call(`player${this.props.player}.perform_move`, [this.props.number, "pass_bid"]);
     }
   }
 
   bid2(call, alone, suit) {
     const session = this.props.session;
     if (call) {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, 'call_two', alone, suit]);
+      session.call(`player${this.props.player}.perform_move`, [
+        this.props.number,
+        "call_two",
+        alone,
+        suit
+      ]);
     } else {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, 'pass_bid']);
+      session.call(`player${this.props.player}.perform_move`, [this.props.number, "pass_bid"]);
     }
   }
 
@@ -416,7 +439,11 @@ class Lobby extends Component {
     }
 
     const card = this.props.gameState.hand[i];
-    this.props.session.call(`player${this.props.player}.perform_move`, [this.props.number, phase, card]);
+    this.props.session.call(`player${this.props.player}.perform_move`, [
+      this.props.number,
+      phase,
+      card
+    ]);
   }
 
   myTurn() {
@@ -424,7 +451,7 @@ class Lobby extends Component {
   }
 
   sendMessage(message) {
-    const messageObj = {text: message, sender: this.props.name};
+    const messageObj = { text: message, sender: this.props.name };
     this.props.session.publish(`lobby${this.props.num}.chat`, [messageObj]);
     this.addMessage(messageObj);
   }
@@ -450,14 +477,14 @@ class Lobby extends Component {
           bid1={(...args) => this.bid1(...args)}
           bid2={(...args) => this.bid2(...args)}
           position={this.props.position}
-          handleCardClick={(i) => this.handleCardClick(i)}
-          joinSeat={(pos) => this.props.joinSeat(pos)}
+          handleCardClick={i => this.handleCardClick(i)}
+          joinSeat={pos => this.props.joinSeat(pos)}
         />
-        <div className="grid_4 sidebar" >
+        <div className="grid_4 sidebar">
           <ChatBox
-            sendMessage={(msg) => this.sendMessage(msg)}
-            joinSeat={(pos) => this.joinSeat(pos)}
-            setName={(name) => this.setName(name)}
+            sendMessage={msg => this.sendMessage(msg)}
+            joinSeat={pos => this.joinSeat(pos)}
+            setName={name => this.setName(name)}
             messages={this.props.messages}
           />
           <Scoreboard
@@ -472,7 +499,6 @@ class Lobby extends Component {
       </div>
     );
   }
-
 }
 
 class App extends Component {
@@ -486,12 +512,14 @@ class App extends Component {
   }
 
   joinServer(playerName) {
-    const p = this.session.call('join_server', [playerName]);
-    p.then((res) => {
-      console.log(`Player ID: ${res}`);
-      this.player = res;
-      this.setState({name: 'anon'});
-    }).catch(console.log);
+    const p = this.session.call("join_server", [playerName]);
+    p
+      .then(res => {
+        console.log(`Player ID: ${res}`);
+        this.player = res;
+        this.setState({ name: "anon" });
+      })
+      .catch(console.log);
     return p;
   }
 
@@ -501,7 +529,7 @@ class App extends Component {
 
   trackGame(lobbyId) {
     this.session.subscribe(`lobby${lobbyId}.publicstate`, ([res]) =>
-      this.setState((prevState) =>
+      this.setState(prevState =>
         update(prevState, {
           lobbies: {
             [lobbyId]: {
@@ -517,17 +545,28 @@ class App extends Component {
                   trump: res.trump,
                   turn: res.turn,
                   upcard: res.up_card
-                }}}}})));
+                }
+              }
+            }
+          }
+        })
+      )
+    );
     this.session.subscribe(`lobby${lobbyId}.hands.player${this.player}`, ([res]) =>
-      this.setState((prevState) =>
+      this.setState(prevState =>
         update(prevState, {
           lobbies: {
             [lobbyId]: {
               gameState: {
                 $merge: {
                   hand: res
-                }}}}})
-      ));
+                }
+              }
+            }
+          }
+        })
+      )
+    );
   }
 
   addLobbyState(lobby) {
@@ -549,49 +588,52 @@ class App extends Component {
       position: null
     };
 
-    this.setState((prevState) =>
+    this.setState(prevState =>
       update(prevState, {
         lobbies: {
-          [lobby]: {$set: lobbyState}}
+          [lobby]: { $set: lobbyState }
+        }
       })
     );
-    this.session.subscribe(`lobby${lobby}.chat`, (res) => this.addMessage(res[0]));
+    this.session.subscribe(`lobby${lobby}.chat`, res => this.addMessage(res[0]));
     this.trackGame(lobby);
     if (this.state.activeLobby === null) {
-      this.setState({activeLobby: lobby});
+      this.setState({ activeLobby: lobby });
     }
     console.log("subscribed");
   }
 
   joinLobby(lobby) {
-    this.session.call(`player${this.player}.join_lobby`, [lobby])
-        .then((res) =>
-          this.addLobbyState(lobby));
+    this.session
+      .call(`player${this.player}.join_lobby`, [lobby])
+      .then(res => this.addLobbyState(lobby));
   }
 
   createLobby(name) {
-    this.session.call(`player${this.player}.create_lobby`, [name]).then((res) =>
-      this.addLobbyState(res));
+    this.session
+      .call(`player${this.player}.create_lobby`, [name])
+      .then(res => this.addLobbyState(res));
   }
 
   joinSeat(lobby, position) {
-    this.session.call(`player${this.player}.join_seat`, [lobby, position])
-        .then(() =>
-          this.setState((prevState) =>
-            update(prevState, {
-              lobbies: {
-                [lobby]: {
-                  position: {
-                    $set: position
-                  }
-                }
+    this.session.call(`player${this.player}.join_seat`, [lobby, position]).then(() =>
+      this.setState(prevState =>
+        update(prevState, {
+          lobbies: {
+            [lobby]: {
+              position: {
+                $set: position
               }
-            })));
+            }
+          }
+        })
+      )
+    );
   }
 
   componentDidMount() {
     /* const wsuri = "ws://localhost:8080/ws";*/
-    const wsuri = `ws://${document.location.hostname}:8080/ws`
+    const wsuri = `ws://${document.location.hostname}:8080/ws`;
 
     // the WAMP connection to the Router
     this.connection = new autobahn.Connection({
@@ -602,7 +644,10 @@ class App extends Component {
     // fired when connection is established and session attached
     this.connection.onopen = (session, details) => {
       this.session = session;
-      this.joinServer("Anonymous").then((res) => {this.player = res[0]; console.log(this.player)});
+      this.joinServer("Anonymous").then(res => {
+        this.player = res[0];
+        console.log(this.player);
+      });
       console.log("Connected");
     };
 
@@ -610,7 +655,7 @@ class App extends Component {
     //
     this.connection.onclose = function(reason, details) {
       console.log("Connection lost: " + reason);
-    }
+    };
 
     // now actually open the connection
     this.connection.open();
@@ -621,21 +666,24 @@ class App extends Component {
     if (activeLobby !== null) {
       const lobbyState = this.state.lobbies[activeLobby];
       return (
-        <Lobby gameState={lobbyState.gameState}
-        player={this.player}
-        number={activeLobby}
-        messages={lobbyState.messages}
-        seats={lobbyState.seats}
-        position={lobbyState.position}
-        session={this.session}
-        joinSeat={(pos) => this.joinSeat(activeLobby, pos)}
+        <Lobby
+          gameState={lobbyState.gameState}
+          player={this.player}
+          number={activeLobby}
+          messages={lobbyState.messages}
+          seats={lobbyState.seats}
+          position={lobbyState.position}
+          session={this.session}
+          joinSeat={pos => this.joinSeat(activeLobby, pos)}
         />
       );
     } else {
-      return <LobbyTools
-               createLobby={(name) => this.createLobby(name)}
-               joinLobby={(lobby) => this.joinLobby(lobby)}
-             />;
+      return (
+        <LobbyTools
+          createLobby={name => this.createLobby(name)}
+          joinLobby={lobby => this.joinLobby(lobby)}
+        />
+      );
     }
   }
 }
