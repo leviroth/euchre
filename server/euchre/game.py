@@ -234,7 +234,7 @@ class PlayCardsPhase(TrumpMadePhase):
         new_hands, new_up_card = deal()
 
         return BidPhaseOne(self.score, new_hands, self.left_of(self.dealer),
-                           self.left_of(self.dealer, spots=1), new_up_card)
+                           self.left_of(self.dealer, spots=2), new_up_card)
 
     def play(self, card):
         """Play a card."""

@@ -220,6 +220,8 @@ def test_win_round__make():
     g.perform_move('play', 3, Card.from_str("A.S"))
     next_state = g.perform_move('play', 0, Card.from_str("A.C"))
     assert next_state.score == [0, 1]
+    assert next_state.dealer == 1
+    assert next_state.turn == 2
 
 
 def test_win_round__march():
