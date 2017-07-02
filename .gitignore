@@ -1,3 +1,6 @@
 *.pyc
 .coverage
 htmlcov
+router/.crossbar/key.*
+router/.crossbar/node.pid
+.cache
