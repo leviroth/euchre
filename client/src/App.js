@@ -1,22 +1,13 @@
 import React, { Component } from "react";
 import update from "immutability-helper";
-import "./App.css";
 import autobahn from "autobahn";
 
-function suitToSymbol(suit) {
-  switch (suit) {
-    case "C":
-      return "\u2663";
-    case "D":
-      return "\u2666";
-    case "H":
-      return "\u2665";
-    case "S":
-      return "\u2660";
-    default:
-      return undefined;
-  }
-}
+import "./App.css";
+import ChatBox from "./chat.js";
+import { suitToSymbol } from "./helpers.js";
+import LobbyTools from "./lobbytools.js";
+import { Bid1Controls, Bid2Controls } from "./movecontrols.js";
+import UIButton from "./uibutton.js";
 
 function resolvePlayerPosition(position, player) {
   switch (Number(position)) {
@@ -29,119 +20,6 @@ function resolvePlayerPosition(position, player) {
     default:
       return "bottom";
   }
-}
-
-function ChatDisplay(props) {
-  return (
-    <div>
-      {props.messages.map(message => (
-        <div key={message.when}>
-          <em>{message.sender}:</em> {message.text}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-class ChatInput extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { value: "" };
-  }
-
-  handleChange(event) {
-    this.setState({ value: event.target.value });
-  }
-
-  handleKeyPress(event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      if (this.handleMessage(this.state.value)) {
-        this.setState({ value: "" });
-      }
-      event.preventDefault();
-    }
-  }
-
-  handleMessage(message) {
-    if (message.startsWith("/")) {
-      const [command, ...params] = message.split(" ");
-      switch (command) {
-        case "/create":
-        case "/createlobby":
-          this.props.createLobby(params[0]);
-          return true;
-        case "/join":
-          this.props.joinLobby(params[0]);
-          return true;
-        case "/name":
-        case "/setname":
-          this.props.setName(params[0]);
-          return true;
-        case "/say":
-          this.props.sendMessage(params.join(" "));
-          return true;
-        case "/seat":
-          this.props.joinSeat(params[0]);
-          return true;
-        default:
-          this.props.error(
-            "Unrecognized command. To start a message with '/', use '/say [message]'."
-          );
-          return false;
-      }
-    } else {
-      this.props.sendMessage(message);
-      return true;
-    }
-  }
-
-  render() {
-    return (
-      <textarea
-        style={{ width: "100%", position: "absolute", bottom: "200px" }}
-        value={this.state.value}
-        onChange={e => this.handleChange(e)}
-        onKeyDown={e => this.handleKeyPress(e)}
-      />
-    );
-  }
-}
-
-class ChatBox extends Component {
-  render() {
-    return (
-      <div className="chatbox">
-        <ChatDisplay messages={this.props.messages} />
-        <ChatInput
-          createLobby={name => this.props.createLobby(name)}
-          joinLobby={lobby => this.props.joinLobby(lobby)}
-          joinSeat={pos => this.props.joinSeat(pos)}
-          sendMessage={msg => this.props.sendMessage(msg)}
-          setName={name => this.props.setName(name)}
-          error={console.log}
-        />
-      </div>
-    );
-  }
-}
-
-function UIButton(props) {
-  return (
-    <div className="button" onClick={() => props.onClick()}>
-      {props.children}
-    </div>
-  );
-}
-
-function LobbyTools(props) {
-  return (
-    <div>
-      <UIButton onClick={() => props.createLobby("cool lobby")}>
-        Create lobby
-      </UIButton>
-      <UIButton onClick={() => props.joinLobby(0)}>Join lobby</UIButton>
-    </div>
-  );
 }
 
 class Card extends Component {
@@ -165,87 +43,6 @@ class FaceDownHand extends Component {
         </div>
       </div>
     );
-  }
-}
-
-function AloneControl(props) {
-  return (
-    <div className={props.className}>
-      <span className="control-label">Go alone?</span>
-      <UIButton onClick={() => props.onClick(true)}>Yes</UIButton>
-      <UIButton onClick={() => props.onClick(false)}>No</UIButton>
-    </div>
-  );
-}
-
-class Bid1Controls extends Component {
-  constructor() {
-    super();
-    this.state = { stage: "CALL" };
-  }
-
-  render() {
-    switch (this.state.stage) {
-      case "CALL":
-        return (
-          <div className={this.props.className}>
-            <UIButton onClick={() => this.setState({ stage: "ALONE" })}>
-              Pick it up
-            </UIButton>
-            <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
-          </div>
-        );
-      case "ALONE":
-        return (
-          <AloneControl
-            className={this.props.className}
-            onClick={alone => this.props.call(alone)}
-          />
-        );
-      default:
-        return null;
-    }
-  }
-}
-
-class Bid2Controls extends Component {
-  constructor() {
-    super();
-    this.state = { stage: "CALL" };
-  }
-
-  render() {
-    switch (this.state.stage) {
-      case "CALL":
-        return (
-          <div className={this.props.className}>
-            <UIButton onClick={() => this.setState({ stage: "TRUMP" })}>
-              Name trump
-            </UIButton>
-            <UIButton onClick={() => this.props.pass()}>Pass</UIButton>
-          </div>
-        );
-      case "TRUMP":
-        return (
-          <div className={this.props.className}>
-            <span className="control-label">Trump:</span>
-            {"CDHS".split("").map(c => (
-              <UIButton onClick={() => this.setState({ stage: "ALONE", trump: c })}>
-                {suitToSymbol(c)}
-              </UIButton>
-            ))}
-          </div>
-        );
-      case "ALONE":
-        return (
-          <AloneControl
-            className={this.props.className}
-            onClick={alone => this.props.call(this.state.trump, alone)}
-          />
-        );
-      default:
-        return null;
-    }
   }
 }
 
@@ -504,6 +301,44 @@ class Lobby extends Component {
 class App extends Component {
   constructor() {
     super();
+    this.state = { session: null };
+  }
+
+  componentDidMount() {
+    const wsuri = `ws://${document.location.hostname}:8080/ws`;
+
+    // the WAMP connection to the Router
+    this.connection = new autobahn.Connection({
+      url: wsuri,
+      realm: "realm1"
+    });
+
+    // fired when connection is established and session attached
+    this.connection.onopen = (session, details) => {
+      this.setState({ session: session });
+      console.log("Connected");
+    };
+
+    // fired when connection was lost (or could not be established)
+    //
+    this.connection.onclose = function(reason, details) {
+      console.log("Connection lost: " + reason);
+    };
+
+    // now actually open the connection
+    this.connection.open();
+  }
+
+  render() {
+    return this.state.session
+      ? <ConnectedApp session={this.state.session} />
+      : <div>Connecting...</div>;
+  }
+}
+
+class ConnectedApp extends Component {
+  constructor() {
+    super();
     this.state = {
       activeLobby: null,
       lobbies: Object(),
@@ -511,8 +346,15 @@ class App extends Component {
     };
   }
 
+  componentDidMount() {
+    this.joinServer("Anonymous").then(res => {
+      this.player = res[0];
+      console.log(this.player);
+    });
+  }
+
   joinServer(playerName) {
-    const p = this.session.call("join_server", [playerName]);
+    const p = this.props.session.call("join_server", [playerName]);
     p
       .then(res => {
         console.log(`Player ID: ${res}`);
@@ -524,11 +366,11 @@ class App extends Component {
   }
 
   setName(name) {
-    this.session.call(`player${this.player}.set_name`, [name]);
+    this.props.session.call(`player${this.player}.set_name`, [name]);
   }
 
   trackGame(lobbyId) {
-    this.session.subscribe(`lobby${lobbyId}.publicstate`, ([res]) =>
+    this.props.session.subscribe(`lobby${lobbyId}.publicstate`, ([res]) =>
       this.setState(prevState =>
         update(prevState, {
           lobbies: {
@@ -552,7 +394,7 @@ class App extends Component {
         })
       )
     );
-    this.session.subscribe(`lobby${lobbyId}.hands.player${this.player}`, ([res]) =>
+    this.props.session.subscribe(`lobby${lobbyId}.hands.player${this.player}`, ([res]) =>
       this.setState(prevState =>
         update(prevState, {
           lobbies: {
@@ -595,7 +437,7 @@ class App extends Component {
         }
       })
     );
-    this.session.subscribe(`lobby${lobby}.chat`, res => this.addMessage(res[0]));
+    this.props.session.subscribe(`lobby${lobby}.chat`, res => this.addMessage(res[0]));
     this.trackGame(lobby);
     if (this.state.activeLobby === null) {
       this.setState({ activeLobby: lobby });
@@ -604,19 +446,19 @@ class App extends Component {
   }
 
   joinLobby(lobby) {
-    this.session
+    this.props.session
       .call(`player${this.player}.join_lobby`, [lobby])
       .then(res => this.addLobbyState(lobby));
   }
 
   createLobby(name) {
-    this.session
+    this.props.session
       .call(`player${this.player}.create_lobby`, [name])
       .then(res => this.addLobbyState(res));
   }
 
   joinSeat(lobby, position) {
-    this.session.call(`player${this.player}.join_seat`, [lobby, position]).then(() =>
+    this.props.session.call(`player${this.player}.join_seat`, [lobby, position]).then(() =>
       this.setState(prevState =>
         update(prevState, {
           lobbies: {
@@ -631,36 +473,6 @@ class App extends Component {
     );
   }
 
-  componentDidMount() {
-    /* const wsuri = "ws://localhost:8080/ws";*/
-    const wsuri = `ws://${document.location.hostname}:8080/ws`;
-
-    // the WAMP connection to the Router
-    this.connection = new autobahn.Connection({
-      url: wsuri,
-      realm: "realm1"
-    });
-
-    // fired when connection is established and session attached
-    this.connection.onopen = (session, details) => {
-      this.session = session;
-      this.joinServer("Anonymous").then(res => {
-        this.player = res[0];
-        console.log(this.player);
-      });
-      console.log("Connected");
-    };
-
-    // fired when connection was lost (or could not be established)
-    //
-    this.connection.onclose = function(reason, details) {
-      console.log("Connection lost: " + reason);
-    };
-
-    // now actually open the connection
-    this.connection.open();
-  }
-
   render() {
     const activeLobby = this.state.activeLobby;
     if (activeLobby !== null) {
@@ -673,7 +485,7 @@ class App extends Component {
           messages={lobbyState.messages}
           seats={lobbyState.seats}
           position={lobbyState.position}
-          session={this.session}
+          session={this.props.session}
           joinSeat={pos => this.joinSeat(activeLobby, pos)}
         />
       );
@@ -682,6 +494,7 @@ class App extends Component {
         <LobbyTools
           createLobby={name => this.createLobby(name)}
           joinLobby={lobby => this.joinLobby(lobby)}
+          session={this.props.session}
         />
       );
     }
