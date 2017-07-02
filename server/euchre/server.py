@@ -56,7 +56,7 @@ class Lobby:
     def leave_seat(self, player):
         if self.game is not None:
             raise RuntimeError("Not in the middle of a game!")
-        del(self.seats_to_players.inv[player])
+        del self.seats_to_players.inv[player]
 
     def perform_move(self, move, player, *args, **kwargs):
         self.game.perform_move(move, self.seats_to_players.inv[player],
@@ -109,6 +109,9 @@ class Coordinator(ApplicationSession):
         self.lobbies[lobby_id] = lobby
         return lobby
 
+    def get_lobbies(self):
+        return {k: v.name for k, v in self.lobbies.items()}
+
     def publish_state(self, lobby):
         lobby_prefix = 'lobby{n}'.format(n=lobby.lobby_id)
         self.publish(
@@ -160,6 +163,7 @@ class Coordinator(ApplicationSession):
             return player_id, name
 
         await self.register(join_server, 'join_server')
+        await self.register(self.get_lobbies, 'get_lobbies')
 
 
 if __name__ == '__main__':
