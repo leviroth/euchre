@@ -501,4 +501,42 @@ class ConnectedApp extends Component {
   }
 }
 
+class LobbyDisplay extends Component {
+  render() {
+    return (
+      <div>
+        <LobbyTabs
+          lobbies={this.props.lobbies}
+          activeLobby={this.props.activeLobby}
+          switchToLobby={lobby => this.props.switchToLobby(lobby)}
+        />
+        <Lobby
+          gameState={this.props.gameState}
+          player={this.props.player}
+          number={this.props.activeLobby}
+          messages={lobbyState.messages}
+          seats={lobbyState.seats}
+          position={lobbyState.position}
+          session={this.props.session}
+          joinSeat={pos => this.joinSeat(activeLobby, pos)}
+        />
+      </div>
+    );
+  }
+}
+
+class LobbyTabs extends Component {
+  render() {
+    return (
+      <div className="lobbytabs">
+        {Object.entries(this.props.lobbies).map(([key, value]) => (
+          <UIButton onClick={() => this.props.switchToLobby(Number(key))} key={key}>
+            {value}
+          </UIButton>
+        ))}
+      </div>
+    );
+  }
+}
+
 export default App;
