@@ -5,7 +5,6 @@ import autobahn from "autobahn";
 import "./App.css";
 import ChatBox from "./chat.js";
 import { suitToSymbol } from "./helpers.js";
-import LobbyTools from "./lobbytools.js";
 import { Bid1Controls, Bid2Controls } from "./movecontrols.js";
 import UIButton from "./uibutton.js";
 
@@ -19,6 +18,62 @@ function resolvePlayerPosition(position, player) {
       return "right";
     default:
       return "bottom";
+  }
+}
+
+class GameAPIConnection {
+  constructor(session, playerID) {
+    this.session = session;
+    this.playerID = playerID;
+  }
+
+  callAPI(endpoint, args) {
+    return this.session.call(`player${this.playerID}.${endpoint}`, args);
+  }
+
+  bid1(call, alone) {
+    if (call) {
+      this.performMove("call_one", alone);
+    } else {
+      this.performMove("pass_bid");
+    }
+  }
+
+  bid2(call, alone, suit) {
+    if (call) {
+      this.performMove("call_two", alone, suit);
+    } else {
+      this.performMove("pass_bid");
+    }
+  }
+
+  joinSeat(position) {
+    return this.callAPI("join_seat", [position]);
+  }
+
+  performMove(...args) {
+    this.callAPI("perform_move", args);
+  }
+
+  sendMessage(message) {
+    this.callAPI("chat", [message]);
+    /* this.addMessage(messageObj);*/
+  }
+
+  setName(name) {
+    this.callAPI("set_name", [name]);
+  }
+
+  subscribe(endpoint, callback) {
+    this.session.subscribe(endpoint, callback);
+  }
+
+  subscribeToHand(callback) {
+    this.subscribe(`hands.player${this.playerID}`, callback);
+  }
+
+  subscribeToChat(callback) {
+    this.subscribe("chat", callback);
   }
 }
 
@@ -134,16 +189,16 @@ class Table extends Component {
           return (
             <Bid1Controls
               className="bid-controls"
-              call={alone => this.props.bid1(true, alone)}
-              pass={() => this.props.bid1(false, false)}
+              call={alone => this.props.gameAPIConnection.bid1(true, alone)}
+              pass={() => this.props.gameAPIConnection.bid1(false, false)}
             />
           );
         case "bid2":
           return (
             <Bid2Controls
               className="bid-controls"
-              call={(trump, alone) => this.props.bid2(true, trump, alone)}
-              pass={() => this.props.bid2(false, false, null)}
+              call={(trump, alone) => this.props.gameAPIConnection.bid2(true, trump, alone)}
+              pass={() => this.props.gameAPIConnection.bid2(false, false, null)}
             />
           );
         default:
@@ -199,33 +254,6 @@ class Lobby extends Component {
     }));
   }
 
-  bid1(call, alone) {
-    const session = this.props.session;
-    if (call) {
-      session.call(`player${this.props.player}.perform_move`, [
-        this.props.number,
-        "call_one",
-        alone
-      ]);
-    } else {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, "pass_bid"]);
-    }
-  }
-
-  bid2(call, alone, suit) {
-    const session = this.props.session;
-    if (call) {
-      session.call(`player${this.props.player}.perform_move`, [
-        this.props.number,
-        "call_two",
-        alone,
-        suit
-      ]);
-    } else {
-      session.call(`player${this.props.player}.perform_move`, [this.props.number, "pass_bid"]);
-    }
-  }
-
   handleCardClick(i) {
     if (!this.myTurn()) {
       return;
@@ -236,21 +264,11 @@ class Lobby extends Component {
     }
 
     const card = this.props.gameState.hand[i];
-    this.props.session.call(`player${this.props.player}.perform_move`, [
-      this.props.number,
-      phase,
-      card
-    ]);
+    this.props.gameAPIConnection.performMove(phase, card);
   }
 
   myTurn() {
     return this.props.gameState.turn === this.props.position;
-  }
-
-  sendMessage(message) {
-    const messageObj = { text: message, sender: this.props.name };
-    this.props.session.publish(`lobby${this.props.num}.chat`, [messageObj]);
-    this.addMessage(messageObj);
   }
 
   render() {
@@ -259,6 +277,7 @@ class Lobby extends Component {
     return (
       <div className="container_12 App">
         <Table
+          gameAPIConnection={this.props.gameAPIConnection}
           hand={gameState.hand}
           hands={gameState.hands}
           upcard={gameState.upcard}
@@ -271,8 +290,6 @@ class Lobby extends Component {
           score={gameState.score}
           player={this.props.position}
           playerNames={this.props.seats}
-          bid1={(...args) => this.bid1(...args)}
-          bid2={(...args) => this.bid2(...args)}
           position={this.props.position}
           handleCardClick={i => this.handleCardClick(i)}
           joinSeat={pos => this.props.joinSeat(pos)}
@@ -301,7 +318,7 @@ class Lobby extends Component {
 class App extends Component {
   constructor() {
     super();
-    this.state = { session: null };
+    this.state = { gameAPIConnection: null };
   }
 
   componentDidMount() {
@@ -315,7 +332,13 @@ class App extends Component {
 
     // fired when connection is established and session attached
     this.connection.onopen = (session, details) => {
-      this.setState({ session: session });
+      session
+        .call("join_server", [])
+        .then(([playerID]) => {
+          this.setState({ gameAPIConnection: new GameAPIConnection(session, playerID) });
+          console.log("Player ID: " + playerID);
+        })
+        .catch(console.log);
       console.log("Connected");
     };
 
@@ -330,8 +353,8 @@ class App extends Component {
   }
 
   render() {
-    return this.state.session
-      ? <ConnectedApp session={this.state.session} />
+    return this.state.gameAPIConnection
+      ? <ConnectedApp gameAPIConnection={this.state.gameAPIConnection} />
       : <div>Connecting...</div>;
   }
 }
@@ -339,134 +362,74 @@ class App extends Component {
 class ConnectedApp extends Component {
   constructor() {
     super();
-    this.state = {
-      activeLobby: null,
-      lobbies: Object(),
-      name: ""
+    const baseGameState = {
+      dealer: null,
+      hand: [],
+      hands: Array(4).fill(0),
+      phase: null,
+      score: [0, 0],
+      sitting: null,
+      trickScore: [0, 0],
+      tricks: [],
+      turn: null,
+      upcard: null
     };
-  }
 
-  componentDidMount() {
-    this.joinServer("Anonymous").then(res => {
-      this.player = res[0];
-      console.log(this.player);
-    });
-  }
-
-  joinServer(playerName) {
-    const p = this.props.session.call("join_server", [playerName]);
-    p
-      .then(res => {
-        console.log(`Player ID: ${res}`);
-        this.player = res;
-        this.setState({ name: "anon" });
-      })
-      .catch(console.log);
-    return p;
-  }
-
-  setName(name) {
-    this.props.session.call(`player${this.player}.set_name`, [name]);
-  }
-
-  trackGame(lobbyId) {
-    this.props.session.subscribe(`lobby${lobbyId}.publicstate`, ([res]) =>
-      this.setState(prevState =>
-        update(prevState, {
-          lobbies: {
-            [lobbyId]: {
-              gameState: {
-                $merge: {
-                  dealer: res.dealer,
-                  hands: res.hands,
-                  phase: res.phase,
-                  score: res.score,
-                  sitting: res.sitting,
-                  trick: res.trick,
-                  trickScore: res.trick_score,
-                  trump: res.trump,
-                  turn: res.turn,
-                  upcard: res.up_card
-                }
-              }
-            }
-          }
-        })
-      )
-    );
-    this.props.session.subscribe(`lobby${lobbyId}.hands.player${this.player}`, ([res]) =>
-      this.setState(prevState =>
-        update(prevState, {
-          lobbies: {
-            [lobbyId]: {
-              gameState: {
-                $merge: {
-                  hand: res
-                }
-              }
-            }
-          }
-        })
-      )
-    );
-  }
-
-  addLobbyState(lobby) {
-    const lobbyState = {
-      gameState: {
-        dealer: null,
-        hand: [],
-        hands: Array(4).fill(0),
-        phase: null,
-        score: [0, 0],
-        sitting: null,
-        trickScore: [0, 0],
-        tricks: [],
-        turn: null,
-        upcard: null
-      },
+    this.state = {
+      gameState: baseGameState,
       messages: [],
       seats: Array(4).fill(null),
       position: null
     };
+  }
 
-    this.setState(prevState =>
-      update(prevState, {
-        lobbies: {
-          [lobby]: { $set: lobbyState }
-        }
-      })
+  trackGame() {
+    this.props.gameAPIConnection.subscribe(`publicstate`, ([res]) =>
+      this.setState(prevState =>
+        update(prevState, {
+          gameState: {
+            $merge: {
+              dealer: res.dealer,
+              hands: res.hands,
+              phase: res.phase,
+              score: res.score,
+              sitting: res.sitting,
+              trick: res.trick,
+              trickScore: res.trick_score,
+              trump: res.trump,
+              turn: res.turn,
+              upcard: res.up_card
+            }
+          }
+        })
+      )
     );
-    this.props.session.subscribe(`lobby${lobby}.chat`, res => this.addMessage(res[0]));
-    this.trackGame(lobby);
-    if (this.state.activeLobby === null) {
-      this.setState({ activeLobby: lobby });
-    }
+    this.props.gameAPIConnection.subscribeToHand(([res]) =>
+      this.setState(prevState =>
+        update(prevState, {
+          gameState: {
+            $merge: {
+              hand: res
+            }
+          }
+        })
+      )
+    );
+  }
+
+  componentDidMount() {
+    this.props.gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
+    this.trackGame();
     console.log("subscribed");
   }
 
-  joinLobby(lobby) {
-    this.props.session
-      .call(`player${this.player}.join_lobby`, [lobby])
-      .then(res => this.addLobbyState(lobby));
-  }
-
-  createLobby(name) {
-    this.props.session
-      .call(`player${this.player}.create_lobby`, [name])
-      .then(res => this.addLobbyState(res));
-  }
-
-  joinSeat(lobby, position) {
-    this.props.session.call(`player${this.player}.join_seat`, [lobby, position]).then(() =>
+  joinSeat(position) {
+    this.props.gameAPIConnection.joinSeat(position).then(() =>
+      // TODO: could the following be simplified to setState({position})?
       this.setState(prevState =>
         update(prevState, {
-          lobbies: {
-            [lobby]: {
-              position: {
-                $set: position
-              }
-            }
+          position: {
+            $set: position
           }
         })
       )
@@ -474,30 +437,17 @@ class ConnectedApp extends Component {
   }
 
   render() {
-    const activeLobby = this.state.activeLobby;
-    if (activeLobby !== null) {
-      const lobbyState = this.state.lobbies[activeLobby];
-      return (
-        <Lobby
-          gameState={lobbyState.gameState}
-          player={this.player}
-          number={activeLobby}
-          messages={lobbyState.messages}
-          seats={lobbyState.seats}
-          position={lobbyState.position}
-          session={this.props.session}
-          joinSeat={pos => this.joinSeat(activeLobby, pos)}
-        />
-      );
-    } else {
-      return (
-        <LobbyTools
-          createLobby={name => this.createLobby(name)}
-          joinLobby={lobby => this.joinLobby(lobby)}
-          session={this.props.session}
-        />
-      );
-    }
+    return (
+      <Lobby
+        gameState={this.state.gameState}
+        player={this.player}
+        seats={this.state.seats}
+        position={this.state.position}
+        messages={this.state.messages}
+        gameAPIConnection={this.props.gameAPIConnection}
+        joinSeat={pos => this.joinSeat(pos)}
+      />
+    );
   }
 }
 
