@@ -247,6 +247,29 @@ class Table extends Component {
 }
 
 class Lobby extends Component {
+  constructor() {
+    super();
+    const baseGameState = {
+      dealer: null,
+      hand: [],
+      hands: Array(4).fill(0),
+      phase: null,
+      score: [0, 0],
+      sitting: null,
+      trickScore: [0, 0],
+      tricks: [],
+      turn: null,
+      upcard: null
+    };
+
+    this.state = {
+      gameState: baseGameState,
+      messages: [],
+      seats: Array(4).fill(null),
+      position: null
+    };
+  }
+
   addMessage(message) {
     message.when = Date.now();
     this.setState(prevState => ({
@@ -254,26 +277,79 @@ class Lobby extends Component {
     }));
   }
 
+  componentDidMount() {
+    this.props.gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
+    this.trackGame();
+    console.log("subscribed");
+  }
+
   handleCardClick(i) {
     if (!this.myTurn()) {
       return;
     }
-    const phase = this.props.gameState.phase;
+    const phase = this.state.gameState.phase;
     if (phase !== "play" && phase !== "discard") {
       return;
     }
 
-    const card = this.props.gameState.hand[i];
+    const card = this.state.gameState.hand[i];
     this.props.gameAPIConnection.performMove(phase, card);
   }
 
+  joinSeat(position) {
+    this.props.gameAPIConnection.joinSeat(position).then(() =>
+      // TODO: could the following be simplified to setState({position})?
+      this.setState(prevState =>
+        update(prevState, {
+          position: {
+            $set: position
+          }
+        })
+      )
+    );
+  }
+
   myTurn() {
-    return this.props.gameState.turn === this.props.position;
+    return this.state.gameState.turn === this.state.position;
+  }
+
+  trackGame() {
+    this.props.gameAPIConnection.subscribe(`publicstate`, ([res]) =>
+      this.setState(prevState =>
+        update(prevState, {
+          gameState: {
+            $merge: {
+              dealer: res.dealer,
+              hands: res.hands,
+              phase: res.phase,
+              score: res.score,
+              sitting: res.sitting,
+              trick: res.trick,
+              trickScore: res.trick_score,
+              trump: res.trump,
+              turn: res.turn,
+              upcard: res.up_card
+            }
+          }
+        })
+      )
+    );
+    this.props.gameAPIConnection.subscribeToHand(([res]) =>
+      this.setState(prevState =>
+        update(prevState, {
+          gameState: {
+            $merge: {
+              hand: res
+            }
+          }
+        })
+      )
+    );
   }
 
   render() {
-    const gameState = this.props.gameState;
-    const team = this.props.position % 2;
+    const gameState = this.state.gameState;
+    const team = this.state.position % 2;
     return (
       <div className="container_12 App">
         <Table
@@ -288,21 +364,21 @@ class Lobby extends Component {
           trick={gameState.trick}
           trickScore={gameState.trickScore}
           score={gameState.score}
-          player={this.props.position}
-          playerNames={this.props.seats}
-          position={this.props.position}
+          player={this.state.position}
+          playerNames={this.state.seats}
+          position={this.state.position}
           handleCardClick={i => this.handleCardClick(i)}
-          joinSeat={pos => this.props.joinSeat(pos)}
+          joinSeat={pos => this.joinSeat(pos)}
         />
         <div className="grid_4 sidebar">
           <ChatBox
             sendMessage={msg => this.sendMessage(msg)}
             joinSeat={pos => this.joinSeat(pos)}
             setName={name => this.setName(name)}
-            messages={this.props.messages}
+            messages={this.state.messages}
           />
           <Scoreboard
-            dealing={gameState.dealer === this.props.position}
+            dealing={gameState.dealer === this.state.position}
             scores={gameState.score}
             team={team}
             tricks={gameState.trickScore}
@@ -354,100 +430,8 @@ class App extends Component {
 
   render() {
     return this.state.gameAPIConnection
-      ? <ConnectedApp gameAPIConnection={this.state.gameAPIConnection} />
+      ? <Lobby gameAPIConnection={this.state.gameAPIConnection} />
       : <div>Connecting...</div>;
-  }
-}
-
-class ConnectedApp extends Component {
-  constructor() {
-    super();
-    const baseGameState = {
-      dealer: null,
-      hand: [],
-      hands: Array(4).fill(0),
-      phase: null,
-      score: [0, 0],
-      sitting: null,
-      trickScore: [0, 0],
-      tricks: [],
-      turn: null,
-      upcard: null
-    };
-
-    this.state = {
-      gameState: baseGameState,
-      messages: [],
-      seats: Array(4).fill(null),
-      position: null
-    };
-  }
-
-  trackGame() {
-    this.props.gameAPIConnection.subscribe(`publicstate`, ([res]) =>
-      this.setState(prevState =>
-        update(prevState, {
-          gameState: {
-            $merge: {
-              dealer: res.dealer,
-              hands: res.hands,
-              phase: res.phase,
-              score: res.score,
-              sitting: res.sitting,
-              trick: res.trick,
-              trickScore: res.trick_score,
-              trump: res.trump,
-              turn: res.turn,
-              upcard: res.up_card
-            }
-          }
-        })
-      )
-    );
-    this.props.gameAPIConnection.subscribeToHand(([res]) =>
-      this.setState(prevState =>
-        update(prevState, {
-          gameState: {
-            $merge: {
-              hand: res
-            }
-          }
-        })
-      )
-    );
-  }
-
-  componentDidMount() {
-    this.props.gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
-    this.trackGame();
-    console.log("subscribed");
-  }
-
-  joinSeat(position) {
-    this.props.gameAPIConnection.joinSeat(position).then(() =>
-      // TODO: could the following be simplified to setState({position})?
-      this.setState(prevState =>
-        update(prevState, {
-          position: {
-            $set: position
-          }
-        })
-      )
-    );
-  }
-
-  render() {
-    return (
-      <Lobby
-        gameState={this.state.gameState}
-        player={this.player}
-        seats={this.state.seats}
-        position={this.state.position}
-        messages={this.state.messages}
-        gameAPIConnection={this.props.gameAPIConnection}
-        joinSeat={pos => this.joinSeat(pos)}
-      />
-    );
   }
 }
 
