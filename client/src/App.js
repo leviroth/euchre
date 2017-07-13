@@ -178,6 +178,36 @@ function Scoreboard(props) {
 }
 
 class Table extends Component {
+  tableEdgeBoxes(positionsToContents) {
+    return Object.entries(positionsToContents).map(([position, contents]) => (
+      <div className={`${position}-box`} key={position}>{contents}</div>
+    ));
+  }
+
+  renderHandDisplays() {
+    const player = this.props.position;
+    const handDisplays = {};
+    for (let otherPosition of [0, 1, 2, 3].filter(x => x !== player)) {
+      const position = resolvePlayerPosition(otherPosition, player);
+      handDisplays[position] = (
+        <FaceDownHand
+          size={this.props.hands[otherPosition]}
+          playerName={this.props.playerNames[otherPosition]}
+          player={position}
+          key={otherPosition}
+        />
+      );
+    }
+    handDisplays["bottom"] = (
+      <Hand
+        playerName={this.props.playerNames[this.props.player]}
+        cards={this.props.hand}
+        onClick={i => this.props.handleCardClick(i)}
+      />
+    );
+    return handDisplays;
+  }
+
   myTurn() {
     return this.props.turn === this.props.player;
   }
@@ -210,35 +240,25 @@ class Table extends Component {
   render() {
     const phase = this.props.phase;
     const player = this.props.position;
+    const edgeDisplays = player !== null
+      ? this.renderHandDisplays()
+      : ["bottom", "left", "top", "right"].reduce((result, position, i) => {
+          result[position] = (
+            <UIButton className="join-seat-button" onClick={() => this.props.joinSeat(i)} key={i}>
+              Join seat
+            </UIButton>
+          );
+          return result;
+        }, {});
 
     return (
       <div className="grid_8" id="table">
-        {player !== null
-          ? [0, 1, 2, 3]
-              .filter(x => x !== player)
-              .map(position => (
-                <FaceDownHand
-                  size={this.props.hands[position]}
-                  player={resolvePlayerPosition(position, player)}
-                  playerName={this.props.playerNames[position]}
-                  key={position}
-                />
-              ))
-          : [0, 1, 2, 3].map(position => (
-              <UIButton onClick={() => this.props.joinSeat(position)} key={position}>
-                Join seat
-              </UIButton>
-            ))}
+        {this.tableEdgeBoxes(edgeDisplays)}
         {this.props.phase &&
           this.props.phase.startsWith("bid") &&
           <div className="upcard">
             {FaceUpCard.fromStr(this.props.upcard, () => false)}
           </div>}
-        <Hand
-          playerName={this.props.playerNames[this.props.player]}
-          cards={this.props.hand}
-          onClick={i => this.props.handleCardClick(i)}
-        />
         {this.renderBidControls()}
         {phase === "play" && <Trick cards={this.props.trick} player={player} />}
       </div>
