@@ -208,6 +208,22 @@ class Table extends Component {
     return handDisplays;
   }
 
+  renderCenterBox() {
+    const phase = this.props.phase;
+    const player = this.props.position;
+    return (
+      <div className="center-box">
+        {phase &&
+          this.props.phase.startsWith("bid") &&
+          <div className="upcard">
+            {FaceUpCard.fromStr(this.props.upcard, () => false)}
+          </div>}
+        {this.renderBidControls()}
+        {phase === "play" && <Trick cards={this.props.trick} player={player} />}
+      </div>
+    );
+  }
+
   myTurn() {
     return this.props.turn === this.props.player;
   }
@@ -238,7 +254,6 @@ class Table extends Component {
   }
 
   render() {
-    const phase = this.props.phase;
     const player = this.props.position;
     const edgeDisplays = player !== null
       ? this.renderHandDisplays()
@@ -254,13 +269,7 @@ class Table extends Component {
     return (
       <div className="grid_8" id="table">
         {this.tableEdgeBoxes(edgeDisplays)}
-        {this.props.phase &&
-          this.props.phase.startsWith("bid") &&
-          <div className="upcard">
-            {FaceUpCard.fromStr(this.props.upcard, () => false)}
-          </div>}
-        {this.renderBidControls()}
-        {phase === "play" && <Trick cards={this.props.trick} player={player} />}
+        {this.renderCenterBox()}
       </div>
     );
   }
@@ -277,7 +286,7 @@ class Lobby extends Component {
       score: [0, 0],
       sitting: null,
       trickScore: [0, 0],
-      tricks: [],
+      trick: {},
       turn: null,
       upcard: null
     };

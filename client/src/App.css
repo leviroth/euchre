@@ -33,6 +33,15 @@ body {
   color: #E8E6CF;
 }
 
+.center-box {
+  position: relative;
+  grid-column: 5 / 11;
+  grid-row: 2 / 5;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
 .left-box, .right-box {
   grid-row: 2 / 5;
   position: relative;
@@ -80,43 +89,44 @@ body {
 }
 
 .trick {
-  top: 170px;
-  left: 160px;
-  height: 300px;
-  width: 300px;
-  position: absolute;
-}
-
-.trickcard {
-  height: 15%;
   width: 100%;
   position: absolute;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
 }
 
 .tricktop,
 .trickbottom {
-  left: 0px;
+  grid-column: 2;
+}
+
+.trickleft,
+.trickright {
+  grid-row: 2;
+}
+
+.tricktop {
+  grid-row: 1;
 }
 
 .trickbottom {
-  top: 50%;
+  grid-row: 3;
 }
 
 .trickleft {
-  left: -100px;
-  top: 75px;
+  grid-column: 1;
 }
 
 .trickright {
-  left: 100px;
-  top: 75px;
+  grid-column: 3;
 }
 
 .upcard {
+  grid-row: 2;
+  left: 50%;
   position: absolute;
-  width: 100%;
-  height: 15%;
-  top: 40%;
+  transform: translateX(-50%);
 }
 
 .button {
@@ -132,12 +142,12 @@ body {
 }
 
 .bid-controls {
-  position: relative;
-  display: flex;
-  top: 60%;
-  width: 40%;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  margin: 0 auto;
+  grid-row: 3;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
 }
 
 .control-label {
