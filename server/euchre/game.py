@@ -54,7 +54,7 @@ class GameOver(Phase):
         self.winning_team = winning_team
 
 
-class LiveGamePhase:
+class LiveGamePhase(Phase):
     """Base class for all phases until game ends."""
     def __init__(self, score, hands, dealer, turn):
         self.score = score
