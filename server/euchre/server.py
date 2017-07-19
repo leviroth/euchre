@@ -1,8 +1,7 @@
-import json
 from autobahn.asyncio.wamp import ApplicationSession, ApplicationRunner
 from bidict import bidict
 from .game import Game, initial_game_state
-from .encoder import CardEncoder, PublicStateEncoder
+from .encoder import to_serializable
 from .objects import Card
 
 
@@ -86,15 +85,16 @@ class Player:
 
 class Coordinator(ApplicationSession):
     def publish_state(self):
-        self.publish(
-            'publicstate',
-            json.loads(json.dumps(self.lobby.game.state,
-                                  cls=PublicStateEncoder)))
+        serializable_state = to_serializable(self.lobby.game.state)
+        if 'hands' in serializable_state:
+            serializable_state['hands'] = [
+                len(hand) for hand in serializable_state['hands']
+            ]
+        self.publish('publicstate', serializable_state)
         for seat, player in self.lobby.seats_to_players.items():
             self.publish(
                 'hands.player{pn}'.format(pn=player.player_id),
-                json.loads(json.dumps(self.lobby.game.state.hands[seat],
-                                      cls=CardEncoder)))
+                to_serializable(self.lobby.game.state.hands[seat]))
 
     async def onJoin(self, details):
         print("session joined")
