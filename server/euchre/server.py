@@ -43,15 +43,20 @@ class Lobby:
     def join_seat(self, player, seat):
         self.check_seat_open(seat)
         self.seats_to_players[seat] = player
+        self.coordinator.publish('seats', {seat: {"id": player.player_id,
+                                                  "name": player.name}})
+        print("Seat {} joined by player {}", seat, player.name)
 
     def leave_seat(self, player):
         if self.game is not None:
             raise RuntimeError("Not in the middle of a game!")
+        seat = self.seats_to_players.inv[player]
         del self.seats_to_players.inv[player]
+        self.coordinator.publish('seats', {seat: None})
 
     def perform_move(self, move, player, *args, **kwargs):
-        self.game.perform_move(move, self.seats_to_players.inv[player],
-                               *args, **kwargs)
+        self.game.perform_move(move, self.seats_to_players.inv[player], *args,
+                               **kwargs)
         self.coordinator.publish_state()
 
     def start_game(self):
@@ -116,11 +121,9 @@ class Coordinator(ApplicationSession):
                 player.perform_move,
                 'player{n}.perform_move'.format(n=player_id))
             await self.register(
-                player.start_game,
-                'player{n}.start_game'.format(n=player_id))
+                player.start_game, 'player{n}.start_game'.format(n=player_id))
             await self.register(
-                player.join_seat,
-                'player{n}.join_seat'.format(n=player_id))
+                player.join_seat, 'player{n}.join_seat'.format(n=player_id))
             await self.register(
                 player.change_seat,
                 'player{n}.change_seat'.format(n=player_id))

@@ -75,6 +75,10 @@ class GameAPIConnection {
   subscribeToChat(callback) {
     this.subscribe("chat", callback);
   }
+
+  subscribeToSeats(callback) {
+    this.subscribe("seats", callback);
+  }
 }
 
 class Card extends Component {
@@ -186,13 +190,16 @@ class Table extends Component {
 
   renderHandDisplays() {
     const player = this.props.position;
+    const name = this.props.players[player] && this.props.players[player].name;
     const handDisplays = {};
     for (let otherPosition of [0, 1, 2, 3].filter(x => x !== player)) {
       const position = resolvePlayerPosition(otherPosition, player);
+      const otherPlayer = this.props.players[otherPosition];
+      const playerName = otherPlayer && otherPlayer.name;
       handDisplays[position] = (
         <FaceDownHand
           size={this.props.hands[otherPosition]}
-          playerName={this.props.playerNames[otherPosition]}
+          playerName={playerName}
           player={position}
           key={otherPosition}
         />
@@ -200,7 +207,7 @@ class Table extends Component {
     }
     handDisplays["bottom"] = (
       <Hand
-        playerName={this.props.playerNames[this.props.player]}
+        playerName={name}
         cards={this.props.hand}
         onClick={i => this.props.handleCardClick(i)}
       />
@@ -363,7 +370,7 @@ class Lobby extends Component {
         })
       )
     );
-    this.props.gameAPIConnection.subscribeToHand(([res]) =>
+    this.props.gameAPIConnection.subscribeToHand(res =>
       this.setState(prevState =>
         update(prevState, {
           gameState: {
@@ -374,6 +381,17 @@ class Lobby extends Component {
         })
       )
     );
+    this.props.gameAPIConnection.subscribeToSeats(([res]) => {
+      Object.entries(res).map(([seat, value]) =>
+        this.setState(prevState =>
+          update(prevState, {
+            seats: {
+              [seat]: { $set: value }
+            }
+          })
+        )
+      );
+    });
   }
 
   render() {
@@ -394,7 +412,7 @@ class Lobby extends Component {
           trickScore={gameState.trickScore}
           score={gameState.score}
           player={this.state.position}
-          playerNames={this.state.seats}
+          players={this.state.seats}
           position={this.state.position}
           handleCardClick={i => this.handleCardClick(i)}
           joinSeat={pos => this.joinSeat(pos)}
