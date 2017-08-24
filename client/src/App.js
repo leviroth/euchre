@@ -370,7 +370,7 @@ class Lobby extends Component {
         })
       )
     );
-    this.props.gameAPIConnection.subscribeToHand(res =>
+    this.props.gameAPIConnection.subscribeToHand(([res]) =>
       this.setState(prevState =>
         update(prevState, {
           gameState: {
