@@ -96,7 +96,9 @@ class FaceDownHand extends Component {
     const n = this.props.size;
     return (
       <div className={`hand ${this.props.player}hand`}>
-        <div className="playername">{this.props.playerName}</div>
+        <div className="playername">
+          {this.props.playerName}
+        </div>
         <div className="cards">
           {[...Array(n)].map((x, i) => <Card key={i} color="black" onClick={() => false} />)}
         </div>
@@ -141,7 +143,9 @@ class Hand extends Component {
             return FaceUpCard.fromStr(cardStr, () => this.props.onClick(index));
           })}
         </div>
-        <div className="playername">{this.props.playerName}</div>
+        <div className="playername">
+          {this.props.playerName}
+        </div>
       </div>
     );
   }
@@ -172,20 +176,30 @@ function Scoreboard(props) {
     <div className="scoreboard" style={{ textAlign: "left" }}>
       {props.dealing ? <div>You are the dealer</div> : null}
       {props.turn ? <div>It's your turn</div> : null}
-      {props.trump !== undefined ? <div>Trump: {props.trump}</div> : null}
+      {props.trump !== undefined
+        ? <div>
+            Trump: {props.trump}
+          </div>
+        : null}
+      {props.tricks
+        ? <div>
+            Tricks taken: {props.tricks[yourTeam]}–{props.tricks[otherTeam]}{" "}
+          </div>
+        : null}
       <div>
-        Tricks taken: {props.tricks[yourTeam]}–{props.tricks[otherTeam]}{" "}
+        Score: {props.scores[yourTeam]}–{props.scores[otherTeam]}
       </div>
-      <div>Score: {props.scores[yourTeam]}–{props.scores[otherTeam]}</div>
     </div>
   );
 }
 
 class Table extends Component {
   tableEdgeBoxes(positionsToContents) {
-    return Object.entries(positionsToContents).map(([position, contents]) => (
-      <div className={`${position}-box`} key={position}>{contents}</div>
-    ));
+    return Object.entries(positionsToContents).map(([position, contents]) =>
+      <div className={`${position}-box`} key={position}>
+        {contents}
+      </div>
+    );
   }
 
   renderHandDisplays() {
@@ -262,16 +276,17 @@ class Table extends Component {
 
   render() {
     const player = this.props.position;
-    const edgeDisplays = player !== null
-      ? this.renderHandDisplays()
-      : ["bottom", "left", "top", "right"].reduce((result, position, i) => {
-          result[position] = (
-            <UIButton className="join-seat-button" onClick={() => this.props.joinSeat(i)} key={i}>
-              Join seat
-            </UIButton>
-          );
-          return result;
-        }, {});
+    const edgeDisplays =
+      player !== null
+        ? this.renderHandDisplays()
+        : ["bottom", "left", "top", "right"].reduce((result, position, i) => {
+            result[position] = (
+              <UIButton className="join-seat-button" onClick={() => this.props.joinSeat(i)} key={i}>
+                Join seat
+              </UIButton>
+            );
+            return result;
+          }, {});
 
     return (
       <div className="grid_8" id="table">
@@ -292,7 +307,7 @@ class Lobby extends Component {
       phase: null,
       score: [0, 0],
       sitting: null,
-      trickScore: [0, 0],
+      trickScore: null,
       trick: {},
       turn: null,
       upcard: null
