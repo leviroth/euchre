@@ -64,6 +64,10 @@ class GameAPIConnection {
     this.callAPI("set_name", [name]);
   }
 
+  startGame() {
+    this.callAPI("start_game");
+  }
+
   subscribe(endpoint, callback) {
     this.session.subscribe(endpoint, callback);
   }
@@ -400,9 +404,29 @@ class Lobby extends Component {
     );
   }
 
+  renderScoreboardSpot() {
+    const gameState = this.state.gameState;
+    if (gameState !== null) {
+      return (
+        <Scoreboard
+          dealing={gameState.dealer === this.state.position}
+          scores={gameState.score}
+          team={this.state.position % 2}
+          tricks={gameState.trickScore}
+          trump={gameState.trump}
+          turn={this.myTurn()}
+        />
+      );
+    } else if (this.state.seats.every(x => x !== null)) {
+      return (
+        <UIButton onClick={() => this.props.gameAPIConnection.startGame()}>Start Game</UIButton>
+      );
+    }
+    return null;
+  }
+
   render() {
     const gameState = this.state.gameState;
-    const team = this.state.position % 2;
     return (
       <div className="container_12 App">
         <Table
@@ -421,15 +445,9 @@ class Lobby extends Component {
             setName={name => this.setName(name)}
             messages={this.state.messages}
           />
-          {gameState &&
-            <Scoreboard
-              dealing={gameState.dealer === this.state.position}
-              scores={gameState.score}
-              team={team}
-              tricks={gameState.trickScore}
-              trump={gameState.trump}
-              turn={this.myTurn()}
-            />}
+          <div className="scoreboard-container">
+            {this.renderScoreboardSpot()}
+          </div>
         </div>
       </div>
     );

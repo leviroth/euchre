@@ -171,10 +171,13 @@ body {
   position: absolute;
 }
 
-.scoreboard {
+.scoreboard-container {
   position: absolute;
   bottom: 0px;
   width: 100%;
+}
+
+.scoreboard {
   border: 3px solid #073142;
   border-radius: 5px;
   color: #0F0003;
