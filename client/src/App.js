@@ -231,7 +231,7 @@ class Table extends Component {
       const playerName = otherPlayer && otherPlayer.name;
       handDisplays[position] = (
         <FaceDownHand
-          size={this.props.hands[otherPosition]}
+          size={this.props.gameState !== null ? this.props.gameState.hands[otherPosition] : 0}
           playerName={playerName}
           player={position}
           key={otherPosition}
@@ -241,7 +241,7 @@ class Table extends Component {
     handDisplays["bottom"] = (
       <Hand
         playerName={name}
-        cards={this.props.hand}
+        cards={this.props.gameState !== null ? this.props.gameState.hand : []}
         onClick={i => this.props.handleCardClick(i)}
       />
     );
@@ -249,28 +249,32 @@ class Table extends Component {
   }
 
   renderCenterBox() {
-    const phase = this.props.phase;
+    const gameState = this.props.gameState;
+    if (gameState === null) {
+      return null;
+    }
+    const phase = gameState.phase;
     const player = this.props.position;
     return (
       <div className="center-box">
         {phase &&
-          this.props.phase.startsWith("bid") &&
+          phase.startsWith("bid") &&
           <div className="upcard">
-            {FaceUpCard.fromStr(this.props.upcard, () => false)}
+            {FaceUpCard.fromStr(gameState.upcard, () => false)}
           </div>}
         {this.renderBidControls()}
-        {phase === "play" && <Trick cards={this.props.trick} player={player} />}
+        {phase === "play" && <Trick cards={gameState.trick} player={player} />}
       </div>
     );
   }
 
   myTurn() {
-    return this.props.turn === this.props.player;
+    return this.props.gameState.turn === this.props.player;
   }
 
   renderBidControls() {
     if (this.myTurn()) {
-      switch (this.props.phase) {
+      switch (this.props.gameState.phase) {
         case "bid1":
           return (
             <Bid1Controls
@@ -319,21 +323,8 @@ class Table extends Component {
 class Lobby extends Component {
   constructor() {
     super();
-    const baseGameState = {
-      dealer: null,
-      hand: [],
-      hands: Array(4).fill(0),
-      phase: null,
-      score: [0, 0],
-      sitting: null,
-      trickScore: null,
-      trick: {},
-      turn: null,
-      upcard: null
-    };
-
     this.state = {
-      gameState: baseGameState,
+      gameState: null,
       messages: [],
       seats: Array(4).fill(null),
       position: null
@@ -349,6 +340,17 @@ class Lobby extends Component {
 
   componentDidMount() {
     this.props.gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
+    this.props.gameAPIConnection.subscribeToSeats(([res]) => {
+      Object.entries(res).map(([seat, value]) =>
+        this.setState(prevState =>
+          update(prevState, {
+            seats: {
+              [seat]: { $set: value }
+            }
+          })
+        )
+      );
+    });
     this.trackGame();
     console.log("subscribed");
   }
@@ -396,17 +398,6 @@ class Lobby extends Component {
         })
       )
     );
-    this.props.gameAPIConnection.subscribeToSeats(([res]) => {
-      Object.entries(res).map(([seat, value]) =>
-        this.setState(prevState =>
-          update(prevState, {
-            seats: {
-              [seat]: { $set: value }
-            }
-          })
-        )
-      );
-    });
   }
 
   render() {
@@ -416,16 +407,7 @@ class Lobby extends Component {
       <div className="container_12 App">
         <Table
           gameAPIConnection={this.props.gameAPIConnection}
-          hand={gameState.hand}
-          hands={gameState.hands}
-          upcard={gameState.upcard}
-          phase={gameState.phase}
-          turn={gameState.turn}
-          dealer={gameState.dealer}
-          alone={gameState.alone}
-          trick={gameState.trick}
-          trickScore={gameState.trickScore}
-          score={gameState.score}
+          gameState={gameState}
           player={this.state.position}
           players={this.state.seats}
           position={this.state.position}
@@ -439,14 +421,15 @@ class Lobby extends Component {
             setName={name => this.setName(name)}
             messages={this.state.messages}
           />
-          <Scoreboard
-            dealing={gameState.dealer === this.state.position}
-            scores={gameState.score}
-            team={team}
-            tricks={gameState.trickScore}
-            trump={gameState.trump}
-            turn={this.myTurn()}
-          />
+          {gameState &&
+            <Scoreboard
+              dealing={gameState.dealer === this.state.position}
+              scores={gameState.score}
+              team={team}
+              tricks={gameState.trickScore}
+              trump={gameState.trump}
+              turn={this.myTurn()}
+            />}
         </div>
       </div>
     );
