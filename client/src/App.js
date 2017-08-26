@@ -76,8 +76,27 @@ class GameAPIConnection {
     this.subscribe("chat", callback);
   }
 
+  subscribeToPublicState(callback) {
+    this.subscribe("publicstate", ([res]) => callback(this.translateStateDict(res)));
+  }
+
   subscribeToSeats(callback) {
     this.subscribe("seats", callback);
+  }
+
+  translateStateDict(state) {
+    return {
+      dealer: state.dealer,
+      hands: state.hands,
+      phase: state.phase,
+      score: state.score,
+      sitting: state.sitting,
+      trick: state.trick,
+      trickScore: state.trick_score,
+      trump: state.trump,
+      turn: state.turn,
+      upcard: state.up_card
+    };
   }
 }
 
@@ -365,26 +384,7 @@ class Lobby extends Component {
   }
 
   trackGame() {
-    this.props.gameAPIConnection.subscribe(`publicstate`, ([res]) =>
-      this.setState(prevState =>
-        update(prevState, {
-          gameState: {
-            $merge: {
-              dealer: res.dealer,
-              hands: res.hands,
-              phase: res.phase,
-              score: res.score,
-              sitting: res.sitting,
-              trick: res.trick,
-              trickScore: res.trick_score,
-              trump: res.trump,
-              turn: res.turn,
-              upcard: res.up_card
-            }
-          }
-        })
-      )
-    );
+    this.props.gameAPIConnection.subscribeToPublicState(res => this.setState({ gameState: res }));
     this.props.gameAPIConnection.subscribeToHand(([res]) =>
       this.setState(prevState =>
         update(prevState, {
