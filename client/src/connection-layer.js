@@ -28,6 +28,10 @@ class GameAPIConnection {
     }
   }
 
+  getPlayers() {
+    return this.callAPI("players");
+  }
+
   joinSeat(position) {
     return this.callPlayerAPI("join_seat", [position]);
   }
@@ -58,6 +62,10 @@ class GameAPIConnection {
 
   subscribeToChat(callback) {
     this.subscribe("chat", callback);
+  }
+
+  subscribeToPlayers(callback) {
+    this.subscribe("players", callback);
   }
 
   subscribeToPublicState(callback) {

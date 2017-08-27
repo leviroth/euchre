@@ -249,6 +249,7 @@ class Lobby extends Component {
       gameState: null,
       messages: [],
       seats: Array(4).fill(null),
+      players: null,
       position: null
     };
   }
@@ -261,8 +262,13 @@ class Lobby extends Component {
   }
 
   componentDidMount() {
-    this.props.gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
-    this.props.gameAPIConnection.subscribeToSeats(([res]) => {
+    const gameAPIConnection = this.props.gameAPIConnection;
+    gameAPIConnection.getPlayers().then((players) => this.setState({ players }));
+    gameAPIConnection.subscribeToPlayers(([players]) => this.setState(prevState =>
+      update(prevState, {players: {$merge: players}})
+    ));
+    gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
+    gameAPIConnection.subscribeToSeats(([res]) => {
       Object.entries(res).map(([seat, value]) =>
         this.setState(prevState =>
           update(prevState, {
@@ -375,7 +381,10 @@ class Lobby extends Component {
 class App extends Component {
   constructor() {
     super();
-    this.state = { gameAPIConnection: null };
+    this.state = {
+      gameAPIConnection: null,
+      playerID: null
+    };
   }
 
   componentDidMount() {
@@ -392,7 +401,10 @@ class App extends Component {
       session
         .call("join_server", [])
         .then(([playerID]) => {
-          this.setState({ gameAPIConnection: new GameAPIConnection(session, playerID) });
+          this.setState({
+            gameAPIConnection: new GameAPIConnection(session, playerID),
+            playerID
+          });
           console.log("Player ID: " + playerID);
         })
         .catch(console.log);
@@ -411,7 +423,7 @@ class App extends Component {
 
   render() {
     return this.state.gameAPIConnection
-      ? <Lobby gameAPIConnection={this.state.gameAPIConnection} />
+      ? <Lobby gameAPIConnection={this.state.gameAPIConnection} playerID={this.state.playerID} />
       : <div>Connecting...</div>;
   }
 }

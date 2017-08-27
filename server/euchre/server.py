@@ -43,8 +43,11 @@ class Lobby:
     def join_seat(self, player, seat):
         self.check_seat_open(seat)
         self.seats_to_players[seat] = player
-        self.coordinator.publish('seats', {seat: {"id": player.player_id,
-                                                  "name": player.name}})
+        self.coordinator.publish(
+            'seats', {seat: {
+                "id": player.player_id,
+                "name": player.name
+            }})
         print("Seat {} joined by player {}", seat, player.name)
 
     def leave_seat(self, player):
@@ -89,6 +92,12 @@ class Player:
 
 
 class Coordinator(ApplicationSession):
+    def get_players(self):
+        return {
+            player_id: player.name
+            for player_id, player in self.players.items()
+        }
+
     def publish_state(self):
         serializable_state = to_serializable(self.lobby.game.state)
         if 'hands' in serializable_state:
@@ -116,6 +125,7 @@ class Coordinator(ApplicationSession):
             self.player_count += 1
             player = Player(player_id, name, self)
             self.players[player_id] = player
+            self.publish('players', {player_id: name})
 
             await self.register(
                 player.perform_move,
@@ -131,6 +141,7 @@ class Coordinator(ApplicationSession):
             return player_id, name
 
         await self.register(join_server, 'join_server')
+        await self.register(self.get_players, 'players')
 
 
 if __name__ == '__main__':
