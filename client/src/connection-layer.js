@@ -1,5 +1,3 @@
-import React from "react";
-
 class GameAPIConnection {
   constructor(session, playerID) {
     this.session = session;
@@ -7,7 +5,11 @@ class GameAPIConnection {
   }
 
   callAPI(endpoint, args) {
-    return this.session.call(`player${this.playerID}.${endpoint}`, args);
+    return this.session.call(endpoint, args);
+  }
+
+  callPlayerAPI(endpoint, args) {
+    return this.callAPI(`player${this.playerID}.${endpoint}`, args);
   }
 
   bid1(call, alone) {
@@ -27,23 +29,23 @@ class GameAPIConnection {
   }
 
   joinSeat(position) {
-    return this.callAPI("join_seat", [position]);
+    return this.callPlayerAPI("join_seat", [position]);
   }
 
   performMove(...args) {
-    this.callAPI("perform_move", args);
+    this.callPlayerAPI("perform_move", args);
   }
 
   sendMessage(message) {
-    this.callAPI("chat", [message]);
+    this.callPlayerAPI("chat", [message]);
   }
 
   setName(name) {
-    this.callAPI("set_name", [name]);
+    this.callPlayerAPI("set_name", [name]);
   }
 
   startGame() {
-    this.callAPI("start_game");
+    this.callPlayerAPI("start_game");
   }
 
   subscribe(endpoint, callback) {
