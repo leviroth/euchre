@@ -41,7 +41,12 @@ class GameAPIConnection {
   }
 
   sendMessage(message) {
-    this.callPlayerAPI("chat", [message]);
+    this.session.publish(
+      "chat",
+      [{ senderID: this.playerID, body: message }],
+      {},
+      { exclude_me: false }
+    );
   }
 
   setName(name) {

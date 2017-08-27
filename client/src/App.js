@@ -267,7 +267,7 @@ class Lobby extends Component {
     gameAPIConnection.subscribeToPlayers(([players]) => this.setState(prevState =>
       update(prevState, {players: {$merge: players}})
     ));
-    gameAPIConnection.subscribeToChat(res => this.addMessage(res[0]));
+    gameAPIConnection.subscribeToChat(([message]) => this.addMessage(message));
     gameAPIConnection.subscribeToSeats(([res]) => {
       Object.entries(res).map(([seat, value]) =>
         this.setState(prevState =>
@@ -364,10 +364,9 @@ class Lobby extends Component {
         />
         <div className="grid_4 sidebar">
           <ChatBox
-            sendMessage={msg => this.sendMessage(msg)}
-            joinSeat={pos => this.joinSeat(pos)}
-            setName={name => this.setName(name)}
+            gameAPIConnection={this.props.gameAPIConnection}
             messages={this.state.messages}
+            players={this.state.players}
           />
           <div className="scoreboard-container">
             {this.renderScoreboardSpot()}
