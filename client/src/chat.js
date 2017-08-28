@@ -35,22 +35,12 @@ class ChatInput extends Component {
     if (message.startsWith("/")) {
       const [command, ...params] = message.split(" ");
       switch (command) {
-        case "/create":
-        case "/createlobby":
-          this.props.createLobby(params[0]);
-          return true;
-        case "/join":
-          this.props.joinLobby(params[0]);
-          return true;
         case "/name":
         case "/setname":
           this.props.setName(params[0]);
           return true;
         case "/say":
           this.props.sendMessage(params.join(" "));
-          return true;
-        case "/seat":
-          this.props.joinSeat(params[0]);
           return true;
         default:
           this.props.error(
@@ -83,8 +73,6 @@ class ChatBox extends Component {
       <div className="chatbox">
         <ChatDisplay players={this.props.players} messages={this.props.messages} />
         <ChatInput
-          createLobby={name => connection.createLobby(name)}
-          joinSeat={pos => connection.joinSeat(pos)}
           sendMessage={msg => connection.sendMessage(msg)}
           setName={name => connection.setName(name)}
           error={console.log}
