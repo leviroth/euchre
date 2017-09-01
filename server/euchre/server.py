@@ -43,11 +43,7 @@ class Lobby:
     def join_seat(self, player, seat):
         self.check_seat_open(seat)
         self.seats_to_players[seat] = player
-        self.coordinator.publish(
-            'seats', {seat: {
-                "id": player.player_id,
-                "name": player.name
-            }})
+        self.coordinator.publish('seats', {seat: player.player_id})
         print("Seat {} joined by player {}", seat, player.name)
 
     def leave_seat(self, player):

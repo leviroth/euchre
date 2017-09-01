@@ -145,12 +145,11 @@ class Table extends Component {
 
   renderHandDisplays() {
     const player = this.props.position;
-    const name = this.props.players[player] && this.props.players[player].name;
+    const name = this.props.players[player];
     const handDisplays = {};
     for (let otherPosition of [0, 1, 2, 3].filter(x => x !== player)) {
       const position = resolvePlayerPosition(otherPosition, player);
-      const otherPlayer = this.props.players[otherPosition];
-      const playerName = otherPlayer && otherPlayer.name;
+      const playerName = this.props.players[otherPosition];
       handDisplays[position] = (
         <FaceDownHand
           size={this.props.gameState !== null ? this.props.gameState.hands[otherPosition] : 0}
@@ -263,17 +262,17 @@ class Lobby extends Component {
 
   componentDidMount() {
     const gameAPIConnection = this.props.gameAPIConnection;
-    gameAPIConnection.getPlayers().then((players) => this.setState({ players }));
-    gameAPIConnection.subscribeToPlayers(([players]) => this.setState(prevState =>
-      update(prevState, {players: {$merge: players}})
-    ));
+    gameAPIConnection.getPlayers().then(players => this.setState({ players }));
+    gameAPIConnection.subscribeToPlayers(([players]) =>
+      this.setState(prevState => update(prevState, { players: { $merge: players } }))
+    );
     gameAPIConnection.subscribeToChat(([message]) => this.addMessage(message));
     gameAPIConnection.subscribeToSeats(([res]) => {
-      Object.entries(res).map(([seat, value]) =>
+      Object.entries(res).map(([seat, playerID]) =>
         this.setState(prevState =>
           update(prevState, {
             seats: {
-              [seat]: { $set: value }
+              [seat]: { $set: playerID }
             }
           })
         )
@@ -357,7 +356,7 @@ class Lobby extends Component {
           gameAPIConnection={this.props.gameAPIConnection}
           gameState={gameState}
           player={this.state.position}
-          players={this.state.seats}
+          players={this.state.seats.map(x => (x !== null ? this.state.players[x] : null))}
           position={this.state.position}
           handleCardClick={i => this.handleCardClick(i)}
           joinSeat={pos => this.joinSeat(pos)}
