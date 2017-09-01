@@ -40,6 +40,12 @@ class Lobby:
         if seat in self.seats_to_players:
             raise RuntimeError("Seat is taken.")
 
+    def get_seats(self):
+        return [
+            getattr(self.seats_to_players.get(seat), 'player_id', None)
+            for seat in range(4)
+        ]
+
     def join_seat(self, player, seat):
         self.check_seat_open(seat)
         self.seats_to_players[seat] = player
@@ -83,6 +89,10 @@ class Player:
     def perform_move(self, move, *args, **kwargs):
         self.coordinator.lobby.perform_move(move, self, *args, **kwargs)
 
+    def set_name(self, name):
+        self.name = name
+        self.coordinator.publish('players', {self.player_id: name})
+
     def start_game(self):
         self.coordinator.lobby.start_game()
 
@@ -93,6 +103,9 @@ class Coordinator(ApplicationSession):
             player_id: player.name
             for player_id, player in self.players.items()
         }
+
+    def get_seats(self):
+        return self.lobby.get_seats()
 
     def publish_state(self):
         serializable_state = to_serializable(self.lobby.game.state)
@@ -131,6 +144,8 @@ class Coordinator(ApplicationSession):
             await self.register(
                 player.join_seat, 'player{n}.join_seat'.format(n=player_id))
             await self.register(
+                player.set_name, 'player{n}.set_name'.format(n=player_id))
+            await self.register(
                 player.change_seat,
                 'player{n}.change_seat'.format(n=player_id))
 
@@ -138,6 +153,7 @@ class Coordinator(ApplicationSession):
 
         await self.register(join_server, 'join_server')
         await self.register(self.get_players, 'players')
+        await self.register(self.get_seats, 'seats')
 
 
 if __name__ == '__main__':

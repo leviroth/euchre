@@ -263,6 +263,7 @@ class Lobby extends Component {
   componentDidMount() {
     const gameAPIConnection = this.props.gameAPIConnection;
     gameAPIConnection.getPlayers().then(players => this.setState({ players }));
+    gameAPIConnection.getSeats().then(seats => this.setState({ seats }));
     gameAPIConnection.subscribeToPlayers(([players]) =>
       this.setState(prevState => update(prevState, { players: { $merge: players } }))
     );

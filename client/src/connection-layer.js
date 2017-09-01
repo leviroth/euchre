@@ -32,6 +32,10 @@ class GameAPIConnection {
     return this.callAPI("players");
   }
 
+  getSeats() {
+    return this.callAPI("seats");
+  }
+
   joinSeat(position) {
     return this.callPlayerAPI("join_seat", [position]);
   }
