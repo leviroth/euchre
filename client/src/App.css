@@ -1,28 +1,3 @@
-.App-logo {
-  animation: App-logo-spin infinite 20s linear;
-  height: 80px;
-}
-
-.App-header {
-  background-color: #222;
-  height: 150px;
-  padding: 20px;
-  color: white;
-}
-
-.App-intro {
-  font-size: large;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 body {
   background-color: #E8E6CF;
 }
@@ -49,92 +24,109 @@ body {
 
 #table {
   position: relative;
+  display: grid;
+  grid-template-columns: repeat(14, 1fr);
+  grid-template-rows: repeat(5, 1fr);
   text-align: center;
   height: 600px;
   background-color: #073142;
   color: #E8E6CF;
 }
 
-.myhand,
-.tophand {
-  height: 15%;
+.center-box {
+  position: relative;
+  grid-column: 5 / 11;
+  grid-row: 2 / 5;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+}
+
+.left-box, .right-box {
+  grid-row: 2 / 5;
+  position: relative;
+}
+
+.top-box, .bottom-box {
+  grid-column: 1/15;
+  position: relative;
+}
+
+
+.left-box {
+  grid-column: 1/5;
+}
+
+.right-box {
+  grid-column: 11/15;
+}
+
+.top-box {
+  grid-row: 1/2;
+}
+
+.bottom-box {
+  grid-row: 5/6;
+}
+
+.cards {
   position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
   width: 100%;
 }
 
-.myhand .card,
-.tophand .card {
-  margin: 3px;
-}
-
-.tophand {
-  top: 1%;
-}
-
-.lefthand,
-.righthand {
-  height: 15%;
-  position: absolute;
-  top: 35%;
-  width: 12%;
-}
-
-.lefthand {
-  left: 4%;
-}
-
-.righthand {
-  right: 4%;
+.lefthand .cards,
+.righthand .cards {
+  width: 75px;
 }
 
 .lefthand .cardblack,
 .righthand .cardblack {
-  display: block;
   margin-bottom: -125%;
-}
-
-.myhand {
-  bottom: 10%;
+  transform: translate(0, -125%);
 }
 
 .trick {
-  top: 170px;
-  left: 160px;
-  height: 300px;
-  width: 300px;
-  position: absolute;
-}
-
-.trickcard {
-  height: 15%;
   width: 100%;
   position: absolute;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
 }
 
 .tricktop,
 .trickbottom {
-  left: 0px;
+  grid-column: 2;
+}
+
+.trickleft,
+.trickright {
+  grid-row: 2;
+}
+
+.tricktop {
+  grid-row: 1;
 }
 
 .trickbottom {
-  top: 50%;
+  grid-row: 3;
 }
 
 .trickleft {
-  left: -100px;
-  top: 75px;
+  grid-column: 1;
 }
 
 .trickright {
-  left: 100px;
-  top: 75px;
+  grid-column: 3;
 }
 
 .upcard {
+  grid-row: 2;
+  left: 50%;
   position: absolute;
-  width: 100%;
-  height: 15%;
-  top: 40%;
+  transform: translateX(-50%);
 }
 
 .button {
@@ -150,12 +142,12 @@ body {
 }
 
 .bid-controls {
-  position: relative;
-  display: flex;
-  top: 60%;
-  width: 40%;
-  margin-left: auto;
-  margin-right: auto;
+  width: 100%;
+  margin: 0 auto;
+  grid-row: 3;
+  left: 50%;
+  position: absolute;
+  transform: translateX(-50%);
 }
 
 .control-label {
@@ -179,10 +171,13 @@ body {
   position: absolute;
 }
 
-.scoreboard {
+.scoreboard-container {
   position: absolute;
   bottom: 0px;
   width: 100%;
+}
+
+.scoreboard {
   border: 3px solid #073142;
   border-radius: 5px;
   color: #0F0003;
@@ -193,4 +188,11 @@ body {
 
 .playername {
   margin: 5px;
+}
+
+.join-seat-button {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }

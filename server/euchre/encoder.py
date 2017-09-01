@@ -1,33 +1,52 @@
-import json
-from .game import (
-    BidPhaseOne, BidPhaseTwo, DiscardPhase, PlayCardsPhase, GameOver, Trick)
+from functools import singledispatch
+
+from .game import (BidPhaseOne, BidPhaseTwo, DiscardPhase, PlayCardsPhase,
+                   Phase, GameOver, Trick)
 from .objects import Card, Suit
 
 
-class CardEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, Card):
-            return str(o)
-        return super().default(o)
+PHASE_NAMES = {
+    BidPhaseOne: 'bid1',
+    BidPhaseTwo: 'bid2',
+    DiscardPhase: 'discard',
+    PlayCardsPhase: 'play',
+    GameOver: 'gameover',
+}
 
 
-class PublicStateEncoder(CardEncoder):
-    DICT_ENCODE = {BidPhaseOne: 'bid1',
-                   BidPhaseTwo: 'bid2',
-                   DiscardPhase: 'discard',
-                   PlayCardsPhase: 'play',
-                   GameOver: 'gameover',
-                   }
+@singledispatch
+def to_serializable(val):
+    return val
 
-    def default(self, o):
-        for t in self.DICT_ENCODE:
-            if isinstance(o, t):
-                d = {k: v for k, v in o.__dict__.items() if k != 'hands'}
-                d['hands'] = [len(hand) for hand in o.hands]
-                d['phase'] = self.DICT_ENCODE[t]
-                return d
-        if isinstance(o, Suit):
-            return str(o)
-        if isinstance(o, Trick):
-            return o.cards
-        return super().default(o)
+
+@to_serializable.register(dict)
+def _(val):
+    return {to_serializable(k): to_serializable(v) for k, v in val.items()}
+
+
+@to_serializable.register(list)  # noqa: F811
+@to_serializable.register(tuple)
+def _(val):
+    return [to_serializable(x) for x in val]
+
+
+@to_serializable.register(Phase)  # noqa: F811
+def _(val):
+    d = to_serializable(vars(val))
+    d['phase'] = PHASE_NAMES[type(val)]
+    return d
+
+
+@to_serializable.register(Suit)  # noqa: F811
+def _(val):
+    return str(val)
+
+
+@to_serializable.register(Trick)  # noqa: F811
+def _(val):
+    return to_serializable(val.cards)
+
+
+@to_serializable.register(Card)  # noqa: F811
+def _(val):
+    return str(val)

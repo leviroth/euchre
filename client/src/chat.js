@@ -5,7 +5,7 @@ function ChatDisplay(props) {
     <div>
       {props.messages.map(message => (
         <div key={message.when}>
-          <em>{message.sender}:</em> {message.text}
+          <em>{props.players[message.senderID]}:</em> {message.body}
         </div>
       ))}
     </div>
@@ -35,22 +35,12 @@ class ChatInput extends Component {
     if (message.startsWith("/")) {
       const [command, ...params] = message.split(" ");
       switch (command) {
-        case "/create":
-        case "/createlobby":
-          this.props.createLobby(params[0]);
-          return true;
-        case "/join":
-          this.props.joinLobby(params[0]);
-          return true;
         case "/name":
         case "/setname":
           this.props.setName(params[0]);
           return true;
         case "/say":
           this.props.sendMessage(params.join(" "));
-          return true;
-        case "/seat":
-          this.props.joinSeat(params[0]);
           return true;
         default:
           this.props.error(
@@ -78,15 +68,13 @@ class ChatInput extends Component {
 
 class ChatBox extends Component {
   render() {
+    const connection = this.props.gameAPIConnection;
     return (
       <div className="chatbox">
-        <ChatDisplay messages={this.props.messages} />
+        <ChatDisplay players={this.props.players} messages={this.props.messages} />
         <ChatInput
-          createLobby={name => this.props.createLobby(name)}
-          joinLobby={lobby => this.props.joinLobby(lobby)}
-          joinSeat={pos => this.props.joinSeat(pos)}
-          sendMessage={msg => this.props.sendMessage(msg)}
-          setName={name => this.props.setName(name)}
+          sendMessage={msg => connection.sendMessage(msg)}
+          setName={name => connection.setName(name)}
           error={console.log}
         />
       </div>
